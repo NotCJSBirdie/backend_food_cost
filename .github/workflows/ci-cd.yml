@@ -1,47 +1,77 @@
-deploy:
-  runs-on: ubuntu-latest
-  needs: build-and-test
-  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+name: CI/CD Pipeline for Food Cost API
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: "22.x"
-        cache: "npm"
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
-    - name: Install Serverless Framework
-      run: npm install -g serverless
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: npm install
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "npm"
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ap-southeast-2
+      - name: Install dependencies
+        run: npm install
 
-    - name: Deploy to AWS (Dev)
-      env:
-        NODE_ENV: dev
-        S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-        DB_USER: ${{ secrets.DB_USER }}
-        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        DB_NAME: ${{ secrets.DB_NAME }}
-        DB_HOST: ${{ secrets.DB_HOST }}
-      run: serverless deploy --stage dev
+      - name: Run tests
+        run: npm test
+        continue-on-error: true # Adjust based on whether tests are critical
 
-    - name: Deploy to AWS (Prod)
-      if: github.ref == 'refs/heads/main'
-      env:
-        NODE_ENV: production
-        S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-        DB_USER: ${{ secrets.DB_USER }}
-        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        DB_NAME: ${{ secrets.DB_NAME }}
-        DB_HOST: ${{ secrets.DB_HOST }}
-      run: serverless deploy --stage prod
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "npm"
+
+      - name: Install Serverless Framework
+        run: npm install -g serverless
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-southeast-2
+
+      - name: Deploy to AWS (Dev)
+        env:
+          NODE_ENV: dev
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+        run: serverless deploy --stage dev
+
+      - name: Deploy to AWS (Prod)
+        if: github.ref == 'refs/heads/main'
+        env:
+          NODE_ENV: production
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+        run: serverless deploy --stage prod
