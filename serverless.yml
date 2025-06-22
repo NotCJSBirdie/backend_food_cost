@@ -3,6 +3,8 @@ org: carlserquina
 app: food-cost-app
 service: food-cost-api
 
+frameworkVersion: ~4.17.1
+
 params:
   default:
     domain: ${sls:stage}.foodcostapi.com
@@ -21,8 +23,9 @@ provider:
     blockPublicAccess: true
   environment:
     DB_USERNAME: ${param:DB_USERNAME, 'foodcostadmin'}
-    DB_PASSWORD: ${param:DB_PASSWORD, '562GodIsMy'}
+    DB_PASSWORD: ${param:DB_PASSWORD}
     DB_NAME: ${param:DB_NAME, 'foodcost'}
+    DB_HOST: ${param:DB_HOST}
     NODE_ENV: ${opt:stage, 'production'}
   tags:
     environment: ${sls:stage}
@@ -52,8 +55,26 @@ appSync:
       config:
         functionArn: "arn:aws:lambda:ap-southeast-2:795796019955:function:food-cost-api-dev-foodCostLambda"
   resolvers:
-    Query.invoices:
-      kind: UNIT # Use UNIT for direct Lambda invocation
+    Query.dashboardStats:
+      kind: UNIT
+      dataSource: FoodCostLambdaDataSource
+    Query.ingredients:
+      kind: UNIT
+      dataSource: FoodCostLambdaDataSource
+    Query.recipes:
+      kind: UNIT
+      dataSource: FoodCostLambdaDataSource
+    Query.sales:
+      kind: UNIT
+      dataSource: FoodCostLambdaDataSource
+    Mutation.addIngredient:
+      kind: UNIT
+      dataSource: FoodCostLambdaDataSource
+    Mutation.createRecipe:
+      kind: UNIT
+      dataSource: FoodCostLambdaDataSource
+    Mutation.recordSale:
+      kind: UNIT
       dataSource: FoodCostLambdaDataSource
 
 package:

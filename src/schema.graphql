@@ -7,13 +7,6 @@ type Ingredient {
   restockThreshold: Float!
 }
 
-type Invoice {
-  id: ID!
-  fileName: String!
-  totalAmount: Float!
-  createdAt: String!
-}
-
 type RecipeIngredient {
   id: ID!
   quantity: Float!
@@ -45,7 +38,6 @@ type DashboardStats {
 type Query {
   dashboardStats: DashboardStats!
   ingredients: [Ingredient!]!
-  invoices: [Invoice!]!
   recipes: [Recipe!]!
   sales: [Sale!]!
 }
@@ -58,7 +50,6 @@ type Mutation {
     stockQuantity: Float!
     restockThreshold: Float!
   ): Ingredient!
-  uploadInvoice(file: Upload!, fileName: String!): Invoice!
   createRecipe(
     name: String!
     ingredientIds: [ID!]!

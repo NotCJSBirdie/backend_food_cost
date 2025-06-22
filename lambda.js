@@ -4,7 +4,6 @@ Object.keys(require.cache).forEach((key) => delete require.cache[key]);
 const { sequelize } = require("./data-source");
 let resolvers;
 try {
-  // Load the module and explicitly assign the export
   const resolverModule = require("./resolvers");
   resolvers =
     resolverModule.resolvers || resolverModule.default || resolverModule;
@@ -44,17 +43,11 @@ exports.handler = async (event) => {
   try {
     let result;
     switch (operation) {
-      case "getInvoices":
-        result = await resolvers.Query.invoices();
-        break;
       case "getRecipes":
         result = await resolvers.Query.recipes();
         break;
       case "getSales":
         result = await resolvers.Query.sales();
-        break;
-      case "uploadInvoice":
-        result = await resolvers.Mutation.uploadInvoice(null, payload);
         break;
       case "createRecipe":
         result = await resolvers.Mutation.createRecipe(null, payload);
