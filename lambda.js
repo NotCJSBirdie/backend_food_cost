@@ -1,4 +1,4 @@
-// Clear module cache to prevent corruption
+// lambda.js
 Object.keys(require.cache).forEach((key) => delete require.cache[key]);
 
 const { sequelize } = require("./data-source");
@@ -31,7 +31,8 @@ async function initializeDatabase() {
       message: err.message,
       stack: err.stack,
     });
-    throw err;
+    // Log error but don't exit; let handler proceed
+    return false;
   }
 }
 
@@ -40,7 +41,7 @@ initializeDatabase().catch((err) => {
     message: err.message,
     stack: err.stack,
   });
-  process.exit(1);
+  // Log error but don't exit
 });
 
 // Catch uncaught exceptions
@@ -49,7 +50,7 @@ process.on("uncaughtException", (err) => {
     message: err.message,
     stack: err.stack,
   });
-  process.exit(1);
+  // Log error but don't exit
 });
 
 // AppSync-compatible Lambda handler
@@ -57,9 +58,7 @@ exports.handler = async (event, context) => {
   console.log("Lambda invoked with event:", JSON.stringify(event, null, 2));
   console.log("Lambda context:", JSON.stringify(context, null, 2));
 
-  // Handle AppSync resolver events
   try {
-    // AppSync sends events with fieldName, arguments, and parent
     const { fieldName, arguments: args, info } = event;
     console.log("Processing AppSync event:", { fieldName, args });
 
@@ -77,7 +76,6 @@ exports.handler = async (event, context) => {
     const resolver = resolvers[info.parentTypeName][fieldName];
     console.log(`Executing resolver: ${info.parentTypeName}.${fieldName}`);
 
-    // Execute the resolver with arguments
     const result = await resolver(null, args, { sequelize });
     console.log("Resolver result:", JSON.stringify(result, null, 2));
 

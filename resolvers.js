@@ -11,7 +11,7 @@ const resolvers = {
             message: err.message,
             stack: err.stack,
           });
-          return null; // Explicitly return null to trigger default handling
+          return null;
         });
         console.log(`Fetched sales: ${sales ? sales.length : 0}`);
 
@@ -37,7 +37,6 @@ const resolvers = {
           `Fetched ingredients: ${ingredients ? ingredients.length : 0}`
         );
 
-        // Handle null or empty results
         const totalSales =
           Array.isArray(sales) && sales.length
             ? sales.reduce((sum, sale) => {
@@ -89,7 +88,6 @@ const resolvers = {
           lowStockIngredientsCount: lowStockIngredients.length,
         });
 
-        // Validate non-nullable fields
         if (
           !Number.isFinite(totalSales) ||
           !Number.isFinite(totalCosts) ||
@@ -146,6 +144,7 @@ const resolvers = {
     ingredients: async (_, __, { sequelize }) => {
       console.log("Entering ingredients resolver...");
       try {
+        console.log("Attempting to fetch ingredients...");
         const ingredients = await Ingredient.findAll().catch((err) => {
           console.error("Ingredient.findAll failed:", {
             message: err.message,
@@ -162,21 +161,31 @@ const resolvers = {
           );
           return [];
         }
-        return ingredients.map((i) => {
-          const json = i.toJSON();
-          console.log(`Mapping ingredient ${json.id}`);
-          return {
-            ...json,
-            id: json.id.toString(),
-            unitPrice: Number.isFinite(json.unitPrice) ? json.unitPrice : 0,
-            stockQuantity: Number.isFinite(json.stockQuantity)
-              ? json.stockQuantity
-              : 0,
-            restockThreshold: Number.isFinite(json.restockThreshold)
-              ? json.restockThreshold
-              : 0,
-          };
-        });
+        return ingredients
+          .map((i) => {
+            try {
+              const json = i.toJSON();
+              console.log(`Mapping ingredient ${json.id || "unknown"}`);
+              return {
+                ...json,
+                id: json.id ? json.id.toString() : `ing-${Date.now()}`,
+                unitPrice: Number.isFinite(json.unitPrice) ? json.unitPrice : 0,
+                stockQuantity: Number.isFinite(json.stockQuantity)
+                  ? json.stockQuantity
+                  : 0,
+                restockThreshold: Number.isFinite(json.restockThreshold)
+                  ? json.restockThreshold
+                  : 0,
+              };
+            } catch (mapError) {
+              console.error("Error mapping ingredient:", {
+                message: mapError.message,
+                stack: mapError.stack,
+              });
+              return null;
+            }
+          })
+          .filter((item) => item !== null);
       } catch (error) {
         console.error("Error in ingredients resolver:", {
           message: error.message,
@@ -188,6 +197,7 @@ const resolvers = {
     recipes: async (_, __, { sequelize }) => {
       console.log("Entering recipes resolver...");
       try {
+        console.log("Attempting to fetch recipes...");
         const recipes = await Recipe.findAll({
           include: [
             {
@@ -211,35 +221,51 @@ const resolvers = {
           console.warn("Recipes result is not an array, returning empty array");
           return [];
         }
-        return recipes.map((r) => {
-          const json = r.toJSON();
-          console.log(`Mapping recipe ${json.id}`);
-          return {
-            ...json,
-            id: json.id.toString(),
-            totalCost: Number.isFinite(json.totalCost) ? json.totalCost : 0,
-            suggestedPrice: Number.isFinite(json.suggestedPrice)
-              ? json.suggestedPrice
-              : 0,
-            ingredients: json.ingredients?.length
-              ? json.ingredients.map((ri) => {
-                  console.log(`Mapping recipe ingredient ${ri.id}`);
-                  return {
-                    ...ri,
-                    id: ri.id.toString(),
-                    quantity: Number.isFinite(ri.quantity) ? ri.quantity : 0,
-                    ingredient: {
-                      ...ri.ingredient,
-                      id: ri.ingredient.id.toString(),
-                      unitPrice: Number.isFinite(ri.ingredient.unitPrice)
-                        ? ri.ingredient.unitPrice
-                        : 0,
-                    },
-                  };
-                })
-              : [],
-          };
-        });
+        return recipes
+          .map((r) => {
+            try {
+              const json = r.toJSON();
+              console.log(`Mapping recipe ${json.id || "unknown"}`);
+              return {
+                ...json,
+                id: json.id ? json.id.toString() : `rec-${Date.now()}`,
+                totalCost: Number.isFinite(json.totalCost) ? json.totalCost : 0,
+                suggestedPrice: Number.isFinite(json.suggestedPrice)
+                  ? json.suggestedPrice
+                  : 0,
+                ingredients: json.ingredients?.length
+                  ? json.ingredients.map((ri) => {
+                      console.log(
+                        `Mapping recipe ingredient ${ri.id || "unknown"}`
+                      );
+                      return {
+                        ...ri,
+                        id: ri.id ? ri.id.toString() : `ri-${Date.now()}`,
+                        quantity: Number.isFinite(ri.quantity)
+                          ? ri.quantity
+                          : 0,
+                        ingredient: {
+                          ...ri.ingredient,
+                          id: ri.ingredient.id
+                            ? ri.ingredient.id.toString()
+                            : `ing-${Date.now()}`,
+                          unitPrice: Number.isFinite(ri.ingredient.unitPrice)
+                            ? ri.ingredient.unitPrice
+                            : 0,
+                        },
+                      };
+                    })
+                  : [],
+              };
+            } catch (mapError) {
+              console.error("Error mapping recipe:", {
+                message: mapError.message,
+                stack: mapError.stack,
+              });
+              return null;
+            }
+          })
+          .filter((item) => item !== null);
       } catch (error) {
         console.error("Error in recipes resolver:", {
           message: error.message,
