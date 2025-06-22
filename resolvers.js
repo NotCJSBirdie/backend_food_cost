@@ -6,53 +6,87 @@ const resolvers = {
       console.log("Entering dashboardStats resolver...");
       try {
         console.log("Fetching sales...");
-        const sales = await Sale.findAll();
-        console.log(`Fetched ${sales?.length || 0} sales`);
+        const sales = await Sale.findAll().catch((err) => {
+          console.error("Sale.findAll failed:", {
+            message: err.message,
+            stack: err.stack,
+          });
+          return null; // Explicitly return null to trigger default handling
+        });
+        console.log(`Fetched sales: ${sales ? sales.length : 0}`);
 
         console.log("Fetching recipes...");
-        const recipes = await Recipe.findAll();
-        console.log(`Fetched ${recipes?.length || 0} recipes`);
+        const recipes = await Recipe.findAll().catch((err) => {
+          console.error("Recipe.findAll failed:", {
+            message: err.message,
+            stack: err.stack,
+          });
+          return null;
+        });
+        console.log(`Fetched recipes: ${recipes ? recipes.length : 0}`);
 
         console.log("Fetching ingredients...");
-        const ingredients = await Ingredient.findAll();
-        console.log(`Fetched ${ingredients?.length || 0} ingredients`);
+        const ingredients = await Ingredient.findAll().catch((err) => {
+          console.error("Ingredient.findAll failed:", {
+            message: err.message,
+            stack: err.stack,
+          });
+          return null;
+        });
+        console.log(
+          `Fetched ingredients: ${ingredients ? ingredients.length : 0}`
+        );
 
-        // Default to 0 if no sales or recipes
-        const totalSales = sales?.length
-          ? sales.reduce((sum, sale) => {
-              const amount = Number(sale?.saleAmount);
-              console.log(`Processing sale ${sale?.id}: amount=${amount}`);
-              return sum + (Number.isFinite(amount) ? amount : 0);
-            }, 0)
-          : 0;
+        // Handle null or empty results
+        const totalSales =
+          Array.isArray(sales) && sales.length
+            ? sales.reduce((sum, sale) => {
+                const amount = Number(sale?.saleAmount || 0);
+                console.log(
+                  `Processing sale ${sale?.id || "unknown"}: amount=${amount}`
+                );
+                return sum + (Number.isFinite(amount) ? amount : 0);
+              }, 0)
+            : 0;
 
-        const totalCosts = recipes?.length
-          ? recipes.reduce((sum, recipe) => {
-              const cost = Number(recipe?.totalCost);
-              console.log(`Processing recipe ${recipe?.id}: cost=${cost}`);
-              return sum + (Number.isFinite(cost) ? cost : 0);
-            }, 0)
-          : 0;
+        const totalCosts =
+          Array.isArray(recipes) && recipes.length
+            ? recipes.reduce((sum, recipe) => {
+                const cost = Number(recipe?.totalCost || 0);
+                console.log(
+                  `Processing recipe ${recipe?.id || "unknown"}: cost=${cost}`
+                );
+                return sum + (Number.isFinite(cost) ? cost : 0);
+              }, 0)
+            : 0;
 
         const totalMargin =
           Number.isFinite(totalSales) && Number.isFinite(totalCosts)
             ? totalSales - totalCosts
             : 0;
 
-        const lowStockIngredients = ingredients?.length
-          ? ingredients.filter(
-              (ing) =>
-                Number.isFinite(ing?.stockQuantity) &&
-                Number.isFinite(ing?.restockThreshold) &&
-                Number(ing?.stockQuantity) <= Number(ing?.restockThreshold)
-            )
-          : [];
+        const lowStockIngredients =
+          Array.isArray(ingredients) && ingredients.length
+            ? ingredients.filter((ing) => {
+                const isLowStock =
+                  Number.isFinite(ing?.stockQuantity) &&
+                  Number.isFinite(ing?.restockThreshold) &&
+                  Number(ing?.stockQuantity || 0) <=
+                    Number(ing?.restockThreshold || 0);
+                console.log(
+                  `Checking ingredient ${
+                    ing?.id || "unknown"
+                  }: isLowStock=${isLowStock}`
+                );
+                return isLowStock;
+              })
+            : [];
 
         console.log("Dashboard stats calculated:", {
           totalSales,
           totalCosts,
           totalMargin,
-          lowStockIngredients: lowStockIngredients.length,
+          lowStockIngredientsCount: lowStockIngredients.length,
         });
 
         // Validate non-nullable fields
@@ -68,31 +102,39 @@ const resolvers = {
             totalMargin,
             lowStockIngredients,
           });
-          throw new Error("Invalid values in dashboard stats");
+          return {
+            totalSales: 0,
+            totalCosts: 0,
+            totalMargin: 0,
+            lowStockIngredients: [],
+          };
         }
 
         return {
           totalSales,
           totalCosts,
           totalMargin,
-          lowStockIngredients: lowStockIngredients.map((ing) => ({
-            ...ing.toJSON(),
-            id: ing.id.toString(),
-            unitPrice: Number.isFinite(ing.unitPrice) ? ing.unitPrice : 0,
-            stockQuantity: Number.isFinite(ing.stockQuantity)
-              ? ing.stockQuantity
-              : 0,
-            restockThreshold: Number.isFinite(ing.restockThreshold)
-              ? ing.restockThreshold
-              : 0,
-          })),
+          lowStockIngredients: lowStockIngredients.map((ing) => {
+            const json = ing.toJSON();
+            console.log(`Mapping ingredient ${json.id}`);
+            return {
+              ...json,
+              id: json.id.toString(),
+              unitPrice: Number.isFinite(json.unitPrice) ? json.unitPrice : 0,
+              stockQuantity: Number.isFinite(json.stockQuantity)
+                ? json.stockQuantity
+                : 0,
+              restockThreshold: Number.isFinite(json.restockThreshold)
+                ? json.restockThreshold
+                : 0,
+            };
+          }),
         };
       } catch (error) {
         console.error("Error in dashboardStats:", {
           message: error.message,
           stack: error.stack,
         });
-        // Return default values to satisfy non-nullable schema
         return {
           totalSales: 0,
           totalCosts: 0,
@@ -104,21 +146,37 @@ const resolvers = {
     ingredients: async (_, __, { sequelize }) => {
       console.log("Entering ingredients resolver...");
       try {
-        const ingredients = await Ingredient.findAll();
-        console.log(`Fetched ${ingredients?.length || 0} ingredients`);
-        return ingredients?.length
-          ? ingredients.map((i) => ({
-              ...i.toJSON(),
-              id: i.id.toString(),
-              unitPrice: Number.isFinite(i.unitPrice) ? i.unitPrice : 0,
-              stockQuantity: Number.isFinite(i.stockQuantity)
-                ? i.stockQuantity
-                : 0,
-              restockThreshold: Number.isFinite(i.restockThreshold)
-                ? i.restockThreshold
-                : 0,
-            }))
-          : [];
+        const ingredients = await Ingredient.findAll().catch((err) => {
+          console.error("Ingredient.findAll failed:", {
+            message: err.message,
+            stack: err.stack,
+          });
+          return null;
+        });
+        console.log(
+          `Fetched ingredients: ${ingredients ? ingredients.length : 0}`
+        );
+        if (!Array.isArray(ingredients)) {
+          console.warn(
+            "Ingredients result is not an array, returning empty array"
+          );
+          return [];
+        }
+        return ingredients.map((i) => {
+          const json = i.toJSON();
+          console.log(`Mapping ingredient ${json.id}`);
+          return {
+            ...json,
+            id: json.id.toString(),
+            unitPrice: Number.isFinite(json.unitPrice) ? json.unitPrice : 0,
+            stockQuantity: Number.isFinite(json.stockQuantity)
+              ? json.stockQuantity
+              : 0,
+            restockThreshold: Number.isFinite(json.restockThreshold)
+              ? json.restockThreshold
+              : 0,
+          };
+        });
       } catch (error) {
         console.error("Error in ingredients resolver:", {
           message: error.message,
@@ -141,32 +199,47 @@ const resolvers = {
               ],
             },
           ],
+        }).catch((err) => {
+          console.error("Recipe.findAll failed:", {
+            message: err.message,
+            stack: err.stack,
+          });
+          return null;
         });
-        console.log(`Fetched ${recipes?.length || 0} recipes`);
-        return recipes?.length
-          ? recipes.map((r) => ({
-              ...r.toJSON(),
-              id: r.id.toString(),
-              totalCost: Number.isFinite(r.totalCost) ? r.totalCost : 0,
-              suggestedPrice: Number.isFinite(r.suggestedPrice)
-                ? r.suggestedPrice
-                : 0,
-              ingredients: r.ingredients?.length
-                ? r.ingredients.map((ri) => ({
-                    ...ri.toJSON(),
+        console.log(`Fetched recipes: ${recipes ? recipes.length : 0}`);
+        if (!Array.isArray(recipes)) {
+          console.warn("Recipes result is not an array, returning empty array");
+          return [];
+        }
+        return recipes.map((r) => {
+          const json = r.toJSON();
+          console.log(`Mapping recipe ${json.id}`);
+          return {
+            ...json,
+            id: json.id.toString(),
+            totalCost: Number.isFinite(json.totalCost) ? json.totalCost : 0,
+            suggestedPrice: Number.isFinite(json.suggestedPrice)
+              ? json.suggestedPrice
+              : 0,
+            ingredients: json.ingredients?.length
+              ? json.ingredients.map((ri) => {
+                  console.log(`Mapping recipe ingredient ${ri.id}`);
+                  return {
+                    ...ri,
                     id: ri.id.toString(),
                     quantity: Number.isFinite(ri.quantity) ? ri.quantity : 0,
                     ingredient: {
-                      ...ri.ingredient.toJSON(),
+                      ...ri.ingredient,
                       id: ri.ingredient.id.toString(),
                       unitPrice: Number.isFinite(ri.ingredient.unitPrice)
                         ? ri.ingredient.unitPrice
                         : 0,
                     },
-                  }))
-                : [],
-            }))
-          : [];
+                  };
+                })
+              : [],
+          };
+        });
       } catch (error) {
         console.error("Error in recipes resolver:", {
           message: error.message,
@@ -180,36 +253,50 @@ const resolvers = {
       try {
         const sales = await Sale.findAll({
           include: [{ model: Recipe, as: "recipe" }],
+        }).catch((err) => {
+          console.error("Sale.findAll failed:", {
+            message: err.message,
+            stack: err.stack,
+          });
+          return null;
         });
-        console.log(`Fetched ${sales?.length || 0} sales`);
-        return sales?.length
-          ? sales
-              .map((s) => {
-                if (!s?.recipe) {
-                  console.warn(`Sale ${s?.id} has no recipe, skipping`);
-                  return null;
-                }
-                return {
-                  ...s.toJSON(),
-                  id: s.id.toString(),
-                  saleAmount: Number.isFinite(s.saleAmount) ? s.saleAmount : 0,
-                  createdAt: s.createdAt
-                    ? s.createdAt.toISOString()
-                    : new Date().toISOString(),
-                  recipe: {
-                    ...s.recipe.toJSON(),
-                    id: s.recipe.id.toString(),
-                    totalCost: Number.isFinite(s.recipe.totalCost)
-                      ? s.recipe.totalCost
-                      : 0,
-                    suggestedPrice: Number.isFinite(s.recipe.suggestedPrice)
-                      ? s.recipe.suggestedPrice
-                      : 0,
-                  },
-                };
-              })
-              .filter((s) => s !== null)
-          : [];
+        console.log(`Fetched sales: ${sales ? sales.length : 0}`);
+        if (!Array.isArray(sales)) {
+          console.warn("Sales result is not an array, returning empty array");
+          return [];
+        }
+        return sales
+          .map((s) => {
+            if (!s?.recipe) {
+              console.warn(
+                `Sale ${s?.id || "unknown"} has no recipe, skipping`
+              );
+              return null;
+            }
+            const json = s.toJSON();
+            console.log(`Mapping sale ${json.id}`);
+            return {
+              ...json,
+              id: json.id.toString(),
+              saleAmount: Number.isFinite(json.saleAmount)
+                ? json.saleAmount
+                : 0,
+              createdAt: json.createdAt
+                ? json.createdAt.toISOString()
+                : new Date().toISOString(),
+              recipe: {
+                ...json.recipe,
+                id: json.recipe.id.toString(),
+                totalCost: Number.isFinite(json.recipe.totalCost)
+                  ? json.recipe.totalCost
+                  : 0,
+                suggestedPrice: Number.isFinite(json.recipe.suggestedPrice)
+                  ? json.recipe.suggestedPrice
+                  : 0,
+              },
+            };
+          })
+          .filter((s) => s !== null);
       } catch (error) {
         console.error("Error in sales resolver:", {
           message: error.message,
