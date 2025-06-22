@@ -1,94 +1,119 @@
-const { Sequelize } = require("sequelize");
+const { Sequelize, DataTypes } = require("sequelize");
 require("dotenv").config();
 
-const isLocal = process.env.NODE_ENV === "local";
+const isProduction = process.env.NODE_ENV === "production";
 
-console.log("Initializing Sequelize with config:", {
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  username: process.env.DB_USER,
-  port: 5432,
-  isLocal,
-});
+// Validate environment variables
+const requiredEnvVars = ["DB_HOST", "DB_NAME", "DB_USER", "DB_PASSWORD"];
+const missingEnvVars = requiredEnvVars.filter(
+  (varName) => !process.env[varName]
+);
+if (missingEnvVars.length) {
+  throw new Error(
+    `Missing required environment variables: ${missingEnvVars.join(", ")}`
+  );
+}
 
-const sequelize = new Sequelize({
+// Use a connection string for AWS RDS
+const connectionString = `postgres://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:5432/${process.env.DB_NAME}`;
+
+// Initialize Sequelize
+const sequelize = new Sequelize(connectionString, {
   dialect: "postgres",
-  host: process.env.DB_HOST,
-  port: 5432,
-  username: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  dialectOptions: isLocal
-    ? { ssl: false }
-    : { ssl: { require: true, rejectUnauthorized: false } },
-  logging: (msg) => console.log("Sequelize:", msg),
+  dialectOptions: {
+    ssl: isProduction ? { require: true, rejectUnauthorized: false } : false,
+  },
+  logging: isProduction ? false : (msg) => console.log(`Sequelize: ${msg}`),
 });
 
+// Define models
 const Ingredient = sequelize.define(
   "Ingredient",
   {
-    id: { type: Sequelize.DataTypes.STRING, primaryKey: true },
-    name: { type: Sequelize.DataTypes.STRING, allowNull: false },
-    unitPrice: { type: Sequelize.DataTypes.FLOAT, allowNull: false },
-    unit: { type: Sequelize.DataTypes.STRING, allowNull: false },
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: { notEmpty: true },
+    },
+    unitPrice: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+      validate: { min: 0 },
+    },
+    unit: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: { notEmpty: true },
+    },
     stockQuantity: {
-      type: Sequelize.DataTypes.FLOAT,
+      type: DataTypes.FLOAT,
       allowNull: false,
       defaultValue: 0,
+      validate: { min: 0 },
     },
     restockThreshold: {
-      type: Sequelize.DataTypes.FLOAT,
+      type: DataTypes.FLOAT,
       allowNull: false,
       defaultValue: 0,
+      validate: { min: 0 },
     },
   },
-  { tableName: "Ingredient", timestamps: false }
+  { tableName: "Ingredient" }
 );
 
 const Recipe = sequelize.define(
   "Recipe",
   {
-    id: { type: Sequelize.DataTypes.STRING, primaryKey: true },
-    name: { type: Sequelize.DataTypes.STRING, allowNull: false },
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: { notEmpty: true },
+    },
     totalCost: {
-      type: Sequelize.DataTypes.FLOAT,
+      type: DataTypes.FLOAT,
       allowNull: false,
       defaultValue: 0,
+      validate: { min: 0 },
     },
     suggestedPrice: {
-      type: Sequelize.DataTypes.FLOAT,
+      type: DataTypes.FLOAT,
       allowNull: false,
       defaultValue: 0,
+      validate: { min: 0 },
     },
   },
-  { tableName: "Recipe", timestamps: false }
+  { tableName: "Recipe" }
 );
 
 const Sale = sequelize.define(
   "Sale",
   {
     id: {
-      type: Sequelize.DataTypes.INTEGER,
+      type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
-    saleAmount: { type: Sequelize.DataTypes.FLOAT, allowNull: false },
+    saleAmount: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+      validate: { min: 0 },
+    },
     recipeId: {
-      type: Sequelize.DataTypes.STRING,
+      type: DataTypes.INTEGER,
       allowNull: false,
       references: { model: Recipe, key: "id" },
       onDelete: "RESTRICT",
       onUpdate: "CASCADE",
-    },
-    createdAt: {
-      type: Sequelize.DataTypes.DATE,
-      allowNull: false,
-      defaultValue: Sequelize.NOW,
-    },
-    updatedAt: {
-      type: Sequelize.DataTypes.DATE,
-      allowNull: false,
-      defaultValue: Sequelize.NOW,
     },
   },
   { tableName: "Sale", timestamps: true }
@@ -98,31 +123,34 @@ const RecipeIngredient = sequelize.define(
   "RecipeIngredient",
   {
     id: {
-      type: Sequelize.DataTypes.INTEGER,
+      type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
-    quantity: { type: Sequelize.DataTypes.FLOAT, allowNull: false },
+    quantity: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+      validate: { min: 0 },
+    },
     recipeId: {
-      type: Sequelize.DataTypes.STRING,
+      type: DataTypes.INTEGER,
       allowNull: false,
       references: { model: Recipe, key: "id" },
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
     },
     ingredientId: {
-      type: Sequelize.DataTypes.STRING,
+      type: DataTypes.INTEGER,
       allowNull: false,
       references: { model: Ingredient, key: "id" },
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
     },
   },
-  { tableName: "RecipeIngredient", timestamps: false }
+  { tableName: "RecipeIngredient" }
 );
 
 // Define relationships
-console.log("Defining model relationships...");
 Recipe.hasMany(RecipeIngredient, { foreignKey: "recipeId", as: "ingredients" });
 RecipeIngredient.belongsTo(Recipe, { foreignKey: "recipeId", as: "recipe" });
 RecipeIngredient.belongsTo(Ingredient, {
@@ -136,36 +164,17 @@ Ingredient.hasMany(RecipeIngredient, {
 Sale.belongsTo(Recipe, { foreignKey: "recipeId", as: "recipe" });
 Recipe.hasMany(Sale, { foreignKey: "recipeId", as: "sales" });
 
-// Log associations to verify
-console.log("Recipe associations:", Object.keys(Recipe.associations));
-console.log("Sale associations:", Object.keys(Sale.associations));
-console.log(
-  "RecipeIngredient associations:",
-  Object.keys(RecipeIngredient.associations)
-);
-console.log("Ingredient associations:", Object.keys(Ingredient.associations));
-
-// Sync tables in order
-async function syncDatabase() {
+// Test database connection
+async function testConnection() {
   try {
-    console.log("Authenticating database...");
     await sequelize.authenticate();
-    console.log("Database authenticated successfully");
-    console.log("Syncing Ingredient table...");
-    await Ingredient.sync({ alter: true });
-    console.log("Syncing Recipe table...");
-    await Recipe.sync({ alter: true });
-    console.log("Syncing Sale table...");
-    await Sale.sync({ alter: true });
-    console.log("Syncing RecipeIngredient table...");
-    await RecipeIngredient.sync({ alter: true });
-    console.log("Database synced successfully");
-  } catch (err) {
-    console.error("Database sync error:", {
-      message: err.message,
-      stack: err.stack,
+    console.log("Database connection established successfully");
+  } catch (error) {
+    console.error("Database connection error:", {
+      message: error.message,
+      stack: error.stack,
     });
-    throw err;
+    throw error;
   }
 }
 
@@ -175,5 +184,5 @@ module.exports = {
   Recipe,
   RecipeIngredient,
   Sale,
-  syncDatabase,
+  testConnection,
 };
