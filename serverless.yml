@@ -29,11 +29,9 @@ provider:
     NODE_ENV: ${opt:stage, 'production'}
   tags:
     environment: ${sls:stage}
-  httpApi:
-    timeout: 30 # Match Lambda timeout
 
 functions:
-  FoodCostLambda: # Use PascalCase to match reference
+  FoodCostLambda:
     handler: lambda.handler
     memorySize: 512
     timeout: 30
@@ -42,6 +40,7 @@ functions:
           path: /{proxy+}
           method: ANY
           cors: true
+          timeout: 30 # Set timeout at the event level
 
 plugins:
   - serverless-appsync-plugin
@@ -50,11 +49,12 @@ appSync:
   name: FoodCostApi
   authentication:
     type: API_KEY
+  schema: ./src/schema.graphql
   dataSources:
     FoodCostLambdaDataSource:
       type: AWS_LAMBDA
       config:
-        functionName: FoodCostLambda # Reference the function name directly
+        functionName: FoodCostLambda
   resolvers:
     Query.dashboardStats:
       kind: UNIT
