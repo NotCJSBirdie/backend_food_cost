@@ -1,0 +1,71 @@
+type Ingredient {
+  id: ID!
+  name: String!
+  unitPrice: Float!
+  unit: String!
+  stockQuantity: Float!
+  restockThreshold: Float!
+}
+
+type Invoice {
+  id: ID!
+  fileName: String!
+  totalAmount: Float!
+  createdAt: String!
+}
+
+type RecipeIngredient {
+  id: ID!
+  quantity: Float!
+  ingredient: Ingredient!
+}
+
+type Recipe {
+  id: ID!
+  name: String!
+  totalCost: Float!
+  suggestedPrice: Float!
+  ingredients: [RecipeIngredient!]!
+}
+
+type Sale {
+  id: ID!
+  saleAmount: Float!
+  createdAt: String!
+  recipe: Recipe!
+}
+
+type DashboardStats {
+  totalSales: Float!
+  totalCosts: Float!
+  totalMargin: Float!
+  lowStockIngredients: [Ingredient!]!
+}
+
+type Query {
+  dashboardStats: DashboardStats!
+  ingredients: [Ingredient!]!
+  invoices: [Invoice!]!
+  recipes: [Recipe!]!
+  sales: [Sale!]!
+}
+
+type Mutation {
+  addIngredient(
+    name: String!
+    unitPrice: Float!
+    unit: String!
+    stockQuantity: Float!
+    restockThreshold: Float!
+  ): Ingredient!
+  uploadInvoice(file: Upload!, fileName: String!): Invoice!
+  createRecipe(
+    name: String!
+    ingredientIds: [ID!]!
+    quantities: [Float!]!
+    targetMargin: Float
+  ): Recipe!
+  recordSale(recipeId: ID!, saleAmount: Float!, quantitySold: Int!): Sale!
+}
+
+scalar Upload

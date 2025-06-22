@@ -1,0 +1,161 @@
+2025-06-21 22:46:01,375 - MainThread - awscli.clidriver - DEBUG - CLI version: aws-cli/2.27.40 Python/3.13.5 Darwin/24.5.0 source/arm64
+2025-06-21 22:46:01,375 - MainThread - awscli.clidriver - DEBUG - Arguments entered to CLI: ['lambda', 'invoke', '--function-name', 'FoodCostLambda', '--payload', 'file://payload.json', '--region', 'ap-southeast-2', 'output.json', '--debug']
+2025-06-21 22:46:01,393 - MainThread - botocore.hooks - DEBUG - Event building-command-table.main: calling handler <function add_s3 at 0x10541d3a0>
+2025-06-21 22:46:01,394 - MainThread - botocore.hooks - DEBUG - Event building-command-table.main: calling handler <function add_ddb at 0x1051d6840>
+2025-06-21 22:46:01,394 - MainThread - botocore.hooks - DEBUG - Event building-command-table.main: calling handler <bound method BasicCommand.add_command of <class 'awscli.customizations.configure.configure.ConfigureCommand'>>
+2025-06-21 22:46:01,394 - MainThread - botocore.hooks - DEBUG - Event building-command-table.main: calling handler <function change_name at 0x10513aa20>
+2025-06-21 22:46:01,394 - MainThread - botocore.hooks - DEBUG - Event building-command-table.main: calling handler <function change_name at 0x10513ba60>
+2025-06-21 22:46:01,394 - MainThread - botocore.hooks - DEBUG - Event building-command-table.main: calling handler <function alias_opsworks_cm at 0x105363380>
+2025-06-21 22:46:01,394 - MainThread - botocore.hooks - DEBUG - Event building-command-table.main: calling handler <function add_history_commands at 0x105323560>
+2025-06-21 22:46:01,394 - MainThread - botocore.hooks - DEBUG - Event building-command-table.main: calling handler <bound method BasicCommand.add_command of <class 'awscli.customizations.devcommands.CLIDevCommand'>>
+2025-06-21 22:46:01,394 - MainThread - botocore.hooks - DEBUG - Event building-command-table.main: calling handler <function add_waiters at 0x10543e980>
+2025-06-21 22:46:01,394 - MainThread - botocore.hooks - DEBUG - Event building-command-table.main: calling handler <bound method AliasSubCommandInjector.on_building_command_table of <awscli.alias.AliasSubCommandInjector object at 0x105479a90>>
+2025-06-21 22:46:01,394 - MainThread - botocore.loaders - DEBUG - Loading JSON file: /opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/data/cli.json
+2025-06-21 22:46:01,395 - MainThread - botocore.hooks - DEBUG - Event top-level-args-parsed: calling handler <function resolve_types at 0x1053060c0>
+2025-06-21 22:46:01,395 - MainThread - botocore.hooks - DEBUG - Event top-level-args-parsed: calling handler <function no_sign_request at 0x1053063e0>
+2025-06-21 22:46:01,395 - MainThread - botocore.hooks - DEBUG - Event top-level-args-parsed: calling handler <function resolve_verify_ssl at 0x105306340>
+2025-06-21 22:46:01,395 - MainThread - botocore.hooks - DEBUG - Event top-level-args-parsed: calling handler <function resolve_cli_read_timeout at 0x105306520>
+2025-06-21 22:46:01,395 - MainThread - botocore.hooks - DEBUG - Event top-level-args-parsed: calling handler <function resolve_cli_connect_timeout at 0x105306480>
+2025-06-21 22:46:01,395 - MainThread - botocore.hooks - DEBUG - Event top-level-args-parsed: calling handler <built-in method update of dict object at 0x1054c2f80>
+2025-06-21 22:46:01,395 - MainThread - botocore.session - DEBUG - Setting config variable for region to 'ap-southeast-2'
+2025-06-21 22:46:01,396 - MainThread - awscli.clidriver - DEBUG - CLI version: aws-cli/2.27.40 Python/3.13.5 Darwin/24.5.0 source/arm64
+2025-06-21 22:46:01,396 - MainThread - awscli.clidriver - DEBUG - Arguments entered to CLI: ['lambda', 'invoke', '--function-name', 'FoodCostLambda', '--payload', 'file://payload.json', '--region', 'ap-southeast-2', 'output.json', '--debug']
+2025-06-21 22:46:01,396 - MainThread - botocore.hooks - DEBUG - Event session-initialized: calling handler <function add_timestamp_parser at 0x10543d080>
+2025-06-21 22:46:01,396 - MainThread - botocore.hooks - DEBUG - Event session-initialized: calling handler <function register_uri_param_handler at 0x10441cd60>
+2025-06-21 22:46:01,396 - MainThread - botocore.hooks - DEBUG - Event session-initialized: calling handler <function add_binary_formatter at 0x104f491c0>
+2025-06-21 22:46:01,396 - MainThread - botocore.hooks - DEBUG - Event session-initialized: calling handler <function no_pager_handler at 0x104edab60>
+2025-06-21 22:46:01,396 - MainThread - botocore.hooks - DEBUG - Event session-initialized: calling handler <function inject_assume_role_provider_cache at 0x104f484a0>
+2025-06-21 22:46:01,397 - MainThread - botocore.utils - DEBUG - IMDS ENDPOINT: http://169.254.169.254/
+2025-06-21 22:46:01,402 - MainThread - botocore.hooks - DEBUG - Event session-initialized: calling handler <function attach_history_handler at 0x1053219e0>
+2025-06-21 22:46:01,402 - MainThread - botocore.hooks - DEBUG - Event session-initialized: calling handler <function inject_json_file_cache at 0x1051c8040>
+2025-06-21 22:46:01,413 - MainThread - botocore.loaders - DEBUG - Loading JSON file: /opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/botocore/data/lambda/2015-03-31/service-2.json
+2025-06-21 22:46:01,419 - MainThread - botocore.hooks - DEBUG - Event building-command-table.lambda: calling handler functools.partial(<function _remove_commands at 0x10536d120>, commands_to_remove=['invoke-with-response-stream'])
+2025-06-21 22:46:01,419 - MainThread - awscli.customizations.removals - DEBUG - Removing operation: invoke-with-response-stream
+2025-06-21 22:46:01,419 - MainThread - botocore.hooks - DEBUG - Event building-command-table.lambda: calling handler <function _add_wizard_command at 0x105489bc0>
+2025-06-21 22:46:01,420 - MainThread - botocore.hooks - DEBUG - Event building-command-table.lambda: calling handler <function add_waiters at 0x10543e980>
+2025-06-21 22:46:01,430 - MainThread - botocore.loaders - DEBUG - Loading JSON file: /opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/botocore/data/lambda/2015-03-31/waiters-2.json
+2025-06-21 22:46:01,430 - MainThread - botocore.hooks - DEBUG - Event building-command-table.lambda: calling handler <bound method AliasSubCommandInjector.on_building_command_table of <awscli.alias.AliasSubCommandInjector object at 0x105479a90>>
+2025-06-21 22:46:01,431 - MainThread - awscli.clidriver - DEBUG - OrderedDict({'function-name': <awscli.arguments.CLIArgument object at 0x1055cf0e0>, 'invocation-type': <awscli.arguments.CLIArgument object at 0x105503b10>, 'log-type': <awscli.arguments.CLIArgument object at 0x105503c50>, 'client-context': <awscli.arguments.CLIArgument object at 0x1054de2c0>, 'payload': <awscli.arguments.CLIArgument object at 0x1054de3f0>, 'qualifier': <awscli.arguments.CLIArgument object at 0x105578b90>})
+2025-06-21 22:46:01,431 - MainThread - botocore.hooks - DEBUG - Event building-argument-table.lambda.invoke: calling handler <function add_streaming_output_arg at 0x10543c5e0>
+2025-06-21 22:46:01,431 - MainThread - botocore.hooks - DEBUG - Event building-argument-table.lambda.invoke: calling handler <function add_cli_input_json at 0x104f49d00>
+2025-06-21 22:46:01,431 - MainThread - botocore.hooks - DEBUG - Event building-argument-table.lambda.invoke: calling handler <function add_cli_input_yaml at 0x104f4aac0>
+2025-06-21 22:46:01,431 - MainThread - botocore.hooks - DEBUG - Event building-argument-table.lambda.invoke: calling handler <function unify_paging_params at 0x1051d72e0>
+2025-06-21 22:46:01,442 - MainThread - botocore.loaders - DEBUG - Loading JSON file: /opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/botocore/data/lambda/2015-03-31/paginators-1.json
+2025-06-21 22:46:01,442 - MainThread - botocore.hooks - DEBUG - Event building-argument-table.lambda.invoke: calling handler <function add_generate_skeleton at 0x105304860>
+2025-06-21 22:46:01,442 - MainThread - botocore.hooks - DEBUG - Event building-command-table.lambda_invoke: calling handler <function add_waiters at 0x10543e980>
+2025-06-21 22:46:01,442 - MainThread - botocore.hooks - DEBUG - Event building-command-table.lambda_invoke: calling handler <bound method AliasSubCommandInjector.on_building_command_table of <awscli.alias.AliasSubCommandInjector object at 0x105479a90>>
+2025-06-21 22:46:01,442 - MainThread - botocore.hooks - DEBUG - Event load-cli-arg.lambda.invoke.function-name: calling handler <awscli.paramfile.URIArgumentHandler object at 0x10547a510>
+2025-06-21 22:46:01,442 - MainThread - botocore.hooks - DEBUG - Event process-cli-arg.lambda.invoke: calling handler <awscli.argprocess.ParamShorthandParser object at 0x10533fcb0>
+2025-06-21 22:46:01,442 - MainThread - awscli.arguments - DEBUG - Unpacked value of 'FoodCostLambda' for parameter "function_name": 'FoodCostLambda'
+2025-06-21 22:46:01,442 - MainThread - botocore.hooks - DEBUG - Event load-cli-arg.lambda.invoke.invocation-type: calling handler <awscli.paramfile.URIArgumentHandler object at 0x10547a510>
+2025-06-21 22:46:01,443 - MainThread - botocore.hooks - DEBUG - Event load-cli-arg.lambda.invoke.log-type: calling handler <awscli.paramfile.URIArgumentHandler object at 0x10547a510>
+2025-06-21 22:46:01,443 - MainThread - botocore.hooks - DEBUG - Event load-cli-arg.lambda.invoke.client-context: calling handler <awscli.paramfile.URIArgumentHandler object at 0x10547a510>
+2025-06-21 22:46:01,443 - MainThread - botocore.hooks - DEBUG - Event load-cli-arg.lambda.invoke.payload: calling handler <awscli.paramfile.URIArgumentHandler object at 0x10547a510>
+2025-06-21 22:46:01,443 - MainThread - botocore.hooks - DEBUG - Event process-cli-arg.lambda.invoke: calling handler <awscli.argprocess.ParamShorthandParser object at 0x10533fcb0>
+2025-06-21 22:46:01,443 - MainThread - awscli.argprocess - DEBUG - Param payload looks like JSON, not considered for param shorthand.
+2025-06-21 22:46:01,443 - MainThread - awscli.arguments - DEBUG - Unpacked value of '{"operation":"getInvoices","payload":{}}\n' for parameter "payload": '{"operation":"getInvoices","payload":{}}\n'
+2025-06-21 22:46:01,443 - MainThread - botocore.hooks - DEBUG - Event load-cli-arg.lambda.invoke.qualifier: calling handler <awscli.paramfile.URIArgumentHandler object at 0x10547a510>
+2025-06-21 22:46:01,443 - MainThread - botocore.hooks - DEBUG - Event load-cli-arg.lambda.invoke.outfile: calling handler <awscli.paramfile.URIArgumentHandler object at 0x10547a510>
+2025-06-21 22:46:01,443 - MainThread - botocore.credentials - DEBUG - Looking for credentials via: env
+2025-06-21 22:46:01,443 - MainThread - botocore.credentials - DEBUG - Looking for credentials via: assume-role
+2025-06-21 22:46:01,443 - MainThread - botocore.credentials - DEBUG - Looking for credentials via: assume-role-with-web-identity
+2025-06-21 22:46:01,443 - MainThread - botocore.credentials - DEBUG - Looking for credentials via: sso
+2025-06-21 22:46:01,443 - MainThread - botocore.credentials - DEBUG - Looking for credentials via: shared-credentials-file
+2025-06-21 22:46:01,444 - MainThread - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-06-21 22:46:01,445 - MainThread - botocore.loaders - DEBUG - Loading JSON file: /opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/botocore/data/endpoints.json
+2025-06-21 22:46:01,462 - MainThread - botocore.hooks - DEBUG - Event choose-service-name: calling handler <function handle_service_name_alias at 0x1042fcc20>
+2025-06-21 22:46:01,473 - MainThread - botocore.loaders - DEBUG - Loading JSON file: /opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/botocore/data/lambda/2015-03-31/endpoint-rule-set-1.json
+2025-06-21 22:46:01,473 - MainThread - botocore.loaders - DEBUG - Loading JSON file: /opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/botocore/data/partitions.json
+2025-06-21 22:46:01,474 - MainThread - botocore.hooks - DEBUG - Event creating-client-class.lambda: calling handler <function add_generate_presigned_url at 0x104027420>
+2025-06-21 22:46:01,474 - MainThread - botocore.configprovider - DEBUG - Looking for endpoint for lambda via: environment_service
+2025-06-21 22:46:01,474 - MainThread - botocore.configprovider - DEBUG - Looking for endpoint for lambda via: environment_global
+2025-06-21 22:46:01,474 - MainThread - botocore.configprovider - DEBUG - Looking for endpoint for lambda via: config_service
+2025-06-21 22:46:01,474 - MainThread - botocore.configprovider - DEBUG - Looking for endpoint for lambda via: config_global
+2025-06-21 22:46:01,474 - MainThread - botocore.configprovider - DEBUG - No configured endpoint found.
+2025-06-21 22:46:01,475 - MainThread - botocore.endpoint - DEBUG - Setting lambda timeout as (60, 60)
+2025-06-21 22:46:01,476 - MainThread - botocore.hooks - DEBUG - Event provide-client-params.lambda.Invoke: calling handler <function base64_decode_input_blobs at 0x104f49260>
+2025-06-21 22:46:01,476 - MainThread - awscli.clidriver - DEBUG - Exception caught in main()
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/customizations/binaryformat.py", line 58, in _visit_scalar
+    parent[name] = base64.b64decode(value)
+                   ~~~~~~~~~~~~~~~~^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/base64.py", line 88, in b64decode
+    return binascii.a2b_base64(s, strict_mode=validate)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+binascii.Error: Incorrect padding
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/clidriver.py", line 515, in main
+    return command_table[parsed_args.command](remaining, parsed_args)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/clidriver.py", line 652, in __call__
+    return command_table[parsed_args.operation](remaining, parsed_globals)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/clidriver.py", line 869, in __call__
+    return self._operation_caller.invoke(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self._operation_model.service_model.service_name,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        parsed_globals,
+        ^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/clidriver.py", line 1005, in invoke
+    response = self._make_client_call(
+        client, operation_name, parameters, parsed_globals
+    )
+  File "/opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/clidriver.py", line 1019, in _make_client_call
+    response = getattr(client, xform_name(operation_name))(
+        **parameters
+    )
+  File "/opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/botocore/client.py", line 432, in _api_call
+    return self._make_api_call(operation_name, kwargs)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/botocore/context.py", line 124, in wrapper
+    return func(*args, **kwargs)
+  File "/opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/botocore/client.py", line 834, in _make_api_call
+    api_params = self._emit_api_params(
+        api_params=api_params,
+        operation_model=operation_model,
+        context=request_context,
+    )
+  File "/opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/botocore/client.py", line 943, in _emit_api_params
+    responses = self.meta.events.emit(
+        f'provide-client-params.{service_id}.{operation_name}',
+    ...<2 lines>...
+        context=context,
+    )
+  File "/opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/botocore/hooks.py", line 255, in emit
+    return self._emit(event_name, kwargs)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/botocore/hooks.py", line 238, in _emit
+    response = handler(**kwargs)
+  File "/opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/customizations/binaryformat.py", line 33, in base64_decode_input_blobs
+    Base64DecodeVisitor().visit(params, model.input_shape)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/shorthand.py", line 432, in visit
+    self._visit({}, model, '', params)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/shorthand.py", line 438, in _visit
+    method(parent, shape, name, value)
+    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/shorthand.py", line 444, in _visit_structure
+    self._visit(
+    ~~~~~~~~~~~^
+        value, member_shape, member_name, value.get(member_name)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/shorthand.py", line 438, in _visit
+    method(parent, shape, name, value)
+    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/awscli/2.27.40/libexec/lib/python3.13/site-packages/awscli/customizations/binaryformat.py", line 60, in _visit_scalar
+    raise InvalidBase64Error('Invalid base64: "%s"' % value)
+awscli.customizations.binaryformat.InvalidBase64Error: Invalid base64: "{"operation":"getInvoices","payload":{}}
+"
+
+Invalid base64: "{"operation":"getInvoices","payload":{}}
+"

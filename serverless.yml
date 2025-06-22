@@ -1,0 +1,67 @@
+# serverless.yml
+org: carlserquina
+app: food-cost-app
+service: food-cost-api
+
+params:
+  default:
+    domain: ${sls:stage}.foodcostapi.com
+  prod:
+    domain: foodcostapi.com
+  dev:
+    domain: dev.foodcostapi.com
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  region: ap-southeast-2
+  stage: dev
+  deploymentBucket:
+    name: food-cost-deployment-bucket-795796019955
+    blockPublicAccess: true
+  environment:
+    DB_USERNAME: ${param:DB_USERNAME, 'foodcostadmin'}
+    DB_PASSWORD: ${param:DB_PASSWORD, '562GodIsMy'}
+    DB_NAME: ${param:DB_NAME, 'foodcost'}
+    NODE_ENV: ${opt:stage, 'production'}
+  tags:
+    environment: ${sls:stage}
+
+functions:
+  foodCostLambda:
+    handler: lambda.handler
+    memorySize: 512
+    timeout: 10
+    events:
+      - http:
+          path: /{proxy+}
+          method: ANY
+          cors: true
+
+plugins:
+  - serverless-appsync-plugin
+
+appSync:
+  name: FoodCostApi
+  schema: ./src/schema.graphql
+  authentication:
+    type: API_KEY
+  dataSources:
+    FoodCostLambdaDataSource:
+      type: AWS_LAMBDA
+      config:
+        functionArn: "arn:aws:lambda:ap-southeast-2:795796019955:function:food-cost-api-dev-foodCostLambda"
+  resolvers:
+    Query.invoices:
+      kind: UNIT # Use UNIT for direct Lambda invocation
+      dataSource: FoodCostLambdaDataSource
+
+package:
+  individually: true
+  exclude:
+    - node_modules/**
+  include:
+    - lambda.js
+    - resolvers.js
+    - data-source.js
+    - src/schema.graphql

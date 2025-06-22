@@ -1,0 +1,726 @@
+{
+  "service": {
+    "service": "food-cost-api",
+    "serviceObject": {
+      "name": "food-cost-api"
+    },
+    "provider": {
+      "name": "aws",
+      "runtime": "nodejs22.x",
+      "region": "ap-southeast-2",
+      "stage": "dev",
+      "deploymentBucket": "food-cost-deployment-bucket-795796019955",
+      "environment": {
+        "DB_USERNAME": "foodcostadmin",
+        "DB_PASSWORD": "562GodIsMy",
+        "DB_NAME": "foodcost",
+        "NODE_ENV": "production"
+      },
+      "tags": {
+        "environment": "dev"
+      },
+      "versionFunctions": true,
+      "deploymentBucketObject": {
+        "name": "food-cost-deployment-bucket-795796019955",
+        "blockPublicAccess": true
+      },
+      "compiledCloudFormationTemplate": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "The AWS CloudFormation template for this Serverless application",
+        "Resources": {
+          "FoodCostLambdaLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/food-cost-api-dev-foodCostLambda"
+            }
+          },
+          "IamRoleLambdaExecution": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": [
+                        "lambda.amazonaws.com"
+                      ]
+                    },
+                    "Action": [
+                      "sts:AssumeRole"
+                    ]
+                  }
+                ]
+              },
+              "Policies": [
+                {
+                  "PolicyName": {
+                    "Fn::Join": [
+                      "-",
+                      [
+                        "food-cost-api",
+                        "dev",
+                        "lambda"
+                      ]
+                    ]
+                  },
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:CreateLogStream",
+                          "logs:CreateLogGroup",
+                          "logs:TagResource"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/food-cost-api-dev*:*"
+                          }
+                        ]
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:PutLogEvents"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/food-cost-api-dev*:*:*"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Path": "/",
+              "RoleName": {
+                "Fn::Join": [
+                  "-",
+                  [
+                    "food-cost-api",
+                    "dev",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    "lambdaRole"
+                  ]
+                ]
+              }
+            }
+          },
+          "FoodCostLambdaLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": "food-cost-deployment-bucket-795796019955",
+                "S3Key": "serverless/food-cost-api/dev/1750543608166-2025-06-21T22:06:48.166Z/foodCostLambda.zip"
+              },
+              "Handler": "lambda.handler",
+              "Runtime": "nodejs22.x",
+              "FunctionName": "food-cost-api-dev-foodCostLambda",
+              "MemorySize": 512,
+              "Timeout": 10,
+              "Tags": [
+                {
+                  "Key": "environment",
+                  "Value": "dev"
+                }
+              ],
+              "Environment": {
+                "Variables": {
+                  "DB_USERNAME": "foodcostadmin",
+                  "DB_PASSWORD": "562GodIsMy",
+                  "DB_NAME": "foodcost",
+                  "NODE_ENV": "production"
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "FoodCostLambdaLogGroup"
+            ]
+          },
+          "FoodCostLambdaLambdaVersionUcFDchEyV0pOJRmZUWj8auKoHIDMxfstQENHFZ8A": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "FoodCostLambdaLambdaFunction"
+              },
+              "CodeSha256": "iaaIv5Vg/Uudw5/V53YBVUMB6V0JJqAsrw2GJCBZYgk="
+            }
+          },
+          "ApiGatewayRestApi": {
+            "Type": "AWS::ApiGateway::RestApi",
+            "Properties": {
+              "Name": "dev-food-cost-api",
+              "EndpointConfiguration": {
+                "Types": [
+                  "EDGE"
+                ]
+              },
+              "Policy": ""
+            }
+          },
+          "ApiGatewayResourceProxyVar": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Fn::GetAtt": [
+                  "ApiGatewayRestApi",
+                  "RootResourceId"
+                ]
+              },
+              "PathPart": "{proxy+}",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodProxyVarOptions": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "AuthorizationType": "NONE",
+              "HttpMethod": "OPTIONS",
+              "MethodResponses": [
+                {
+                  "StatusCode": "200",
+                  "ResponseParameters": {
+                    "method.response.header.Access-Control-Allow-Origin": true,
+                    "method.response.header.Access-Control-Allow-Headers": true,
+                    "method.response.header.Access-Control-Allow-Methods": true
+                  },
+                  "ResponseModels": {}
+                }
+              ],
+              "RequestParameters": {},
+              "Integration": {
+                "Type": "MOCK",
+                "RequestTemplates": {
+                  "application/json": "{statusCode:200}"
+                },
+                "ContentHandling": "CONVERT_TO_TEXT",
+                "IntegrationResponses": [
+                  {
+                    "StatusCode": "200",
+                    "ResponseParameters": {
+                      "method.response.header.Access-Control-Allow-Origin": "'*'",
+                      "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                      "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'"
+                    },
+                    "ResponseTemplates": {
+                      "application/json": ""
+                    }
+                  }
+                ]
+              },
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceProxyVar"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodProxyVarAny": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "ANY",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceProxyVar"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "FoodCostLambdaLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "FoodCostLambdaLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayDeployment1750543599334": {
+            "Type": "AWS::ApiGateway::Deployment",
+            "Properties": {
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "StageName": "dev"
+            },
+            "DependsOn": [
+              "ApiGatewayMethodProxyVarOptions",
+              "ApiGatewayMethodProxyVarAny"
+            ]
+          },
+          "FoodCostLambdaLambdaPermissionApiGateway": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+              "FunctionName": {
+                "Fn::GetAtt": [
+                  "FoodCostLambdaLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Action": "lambda:InvokeFunction",
+              "Principal": "apigateway.amazonaws.com",
+              "SourceArn": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":execute-api:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":",
+                    {
+                      "Ref": "ApiGatewayRestApi"
+                    },
+                    "/*/*"
+                  ]
+                ]
+              }
+            }
+          },
+          "GraphQlApi": {
+            "Type": "AWS::AppSync::GraphQLApi",
+            "Properties": {
+              "Name": "FoodCostApi",
+              "XrayEnabled": false,
+              "AuthenticationType": "API_KEY"
+            }
+          },
+          "GraphQlSchema": {
+            "Type": "AWS::AppSync::GraphQLSchema",
+            "Properties": {
+              "Definition": "type Ingredient {\n  id: ID!\n  name: String!\n  unitPrice: Float!\n  unit: String!\n}\n\ntype Invoice {\n  id: ID!\n  fileName: String!\n  totalAmount: Float!\n  createdAt: String!\n}\n\ntype Recipe {\n  id: ID!\n  name: String!\n  totalCost: Float!\n  ingredients: [RecipeIngredient!]!\n}\n\ntype RecipeIngredient {\n  id: ID!\n  quantity: Float!\n  ingredient: Ingredient!\n}\n\ntype Sale {\n  id: ID!\n  saleAmount: Float!\n  createdAt: String!\n  recipe: Recipe!\n}\n\ntype Mutation {\n  uploadInvoice(fileName: String!, totalAmount: Float!): Invoice!\n  createRecipe(\n    name: String!\n    ingredientIds: [ID!]!\n    quantities: [Float!]!\n  ): Recipe!\n  recordSale(recipeId: ID!, saleAmount: Float!): Sale!\n}\n\ntype Query {\n  invoices: [Invoice!]!\n  recipes: [Recipe!]!\n  sales: [Sale!]!\n}\n",
+              "ApiId": {
+                "Fn::GetAtt": [
+                  "GraphQlApi",
+                  "ApiId"
+                ]
+              }
+            }
+          },
+          "GraphQlDsFoodCostLambdaDataSource": {
+            "Type": "AWS::AppSync::DataSource",
+            "Properties": {
+              "ApiId": {
+                "Fn::GetAtt": [
+                  "GraphQlApi",
+                  "ApiId"
+                ]
+              },
+              "Name": "FoodCostLambdaDataSource",
+              "Type": "AWS_LAMBDA",
+              "LambdaConfig": {
+                "LambdaFunctionArn": "arn:aws:lambda:ap-southeast-2:795796019955:function:food-cost-api-dev-foodCostLambda"
+              },
+              "ServiceRoleArn": {
+                "Fn::GetAtt": [
+                  "GraphQlDsFoodCostLambdaDataSourceRole",
+                  "Arn"
+                ]
+              }
+            }
+          },
+          "GraphQlDsFoodCostLambdaDataSourceRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": [
+                        "appsync.amazonaws.com"
+                      ]
+                    },
+                    "Action": [
+                      "sts:AssumeRole"
+                    ]
+                  }
+                ]
+              },
+              "Policies": [
+                {
+                  "PolicyName": "AppSync-Datasource-FoodCostLambdaDataSource",
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Action": [
+                          "lambda:invokeFunction"
+                        ],
+                        "Effect": "Allow",
+                        "Resource": [
+                          "arn:aws:lambda:ap-southeast-2:795796019955:function:food-cost-api-dev-foodCostLambda",
+                          {
+                            "Fn::Join": [
+                              ":",
+                              [
+                                "arn:aws:lambda:ap-southeast-2:795796019955:function:food-cost-api-dev-foodCostLambda",
+                                "*"
+                              ]
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "GraphQlResolverQueryinvoices": {
+            "Type": "AWS::AppSync::Resolver",
+            "DependsOn": [
+              "GraphQlSchema"
+            ],
+            "Properties": {
+              "ApiId": {
+                "Fn::GetAtt": [
+                  "GraphQlApi",
+                  "ApiId"
+                ]
+              },
+              "TypeName": "Query",
+              "FieldName": "invoices",
+              "Kind": "UNIT",
+              "DataSourceName": {
+                "Fn::GetAtt": [
+                  "GraphQlDsFoodCostLambdaDataSource",
+                  "Name"
+                ]
+              }
+            }
+          }
+        },
+        "Outputs": {
+          "ServerlessDeploymentBucketName": {
+            "Value": "food-cost-deployment-bucket-795796019955",
+            "Export": {
+              "Name": "sls-food-cost-api-dev-ServerlessDeploymentBucketName"
+            }
+          },
+          "FoodCostLambdaLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "FoodCostLambdaLambdaVersionUcFDchEyV0pOJRmZUWj8auKoHIDMxfstQENHFZ8A"
+            },
+            "Export": {
+              "Name": "sls-food-cost-api-dev-FoodCostLambdaLambdaFunctionQualifiedArn"
+            }
+          },
+          "ServiceEndpoint": {
+            "Description": "URL of the service endpoint",
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  "https://",
+                  {
+                    "Ref": "ApiGatewayRestApi"
+                  },
+                  ".execute-api.",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  ".",
+                  {
+                    "Ref": "AWS::URLSuffix"
+                  },
+                  "/dev"
+                ]
+              ]
+            },
+            "Export": {
+              "Name": "sls-food-cost-api-dev-ServiceEndpoint"
+            }
+          }
+        }
+      },
+      "vpc": {}
+    },
+    "plugins": [
+      "serverless-appsync-plugin"
+    ],
+    "pluginsData": {},
+    "functions": {
+      "foodCostLambda": {
+        "handler": "lambda.handler",
+        "memorySize": 512,
+        "timeout": 10,
+        "events": [
+          {
+            "http": {
+              "path": "{proxy+}",
+              "method": "any",
+              "cors": {
+                "origin": "*",
+                "methods": [
+                  "OPTIONS",
+                  "ANY"
+                ],
+                "headers": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent",
+                  "X-Amzn-Trace-Id"
+                ],
+                "allowCredentials": false
+              },
+              "integration": "AWS_PROXY"
+            }
+          }
+        ],
+        "name": "food-cost-api-dev-foodCostLambda",
+        "package": {
+          "artifact": ".serverless/foodCostLambda.zip"
+        },
+        "memory": 512,
+        "runtime": "nodejs22.x",
+        "vpc": {},
+        "versionLogicalId": "FoodCostLambdaLambdaVersionUcFDchEyV0pOJRmZUWj8auKoHIDMxfstQENHFZ8A"
+      }
+    },
+    "resources": {
+      "Resources": {
+        "GraphQlApi": {
+          "Type": "AWS::AppSync::GraphQLApi",
+          "Properties": {
+            "Name": "FoodCostApi",
+            "XrayEnabled": false,
+            "AuthenticationType": "API_KEY"
+          }
+        },
+        "GraphQlSchema": {
+          "Type": "AWS::AppSync::GraphQLSchema",
+          "Properties": {
+            "Definition": "type Ingredient {\n  id: ID!\n  name: String!\n  unitPrice: Float!\n  unit: String!\n}\n\ntype Invoice {\n  id: ID!\n  fileName: String!\n  totalAmount: Float!\n  createdAt: String!\n}\n\ntype Recipe {\n  id: ID!\n  name: String!\n  totalCost: Float!\n  ingredients: [RecipeIngredient!]!\n}\n\ntype RecipeIngredient {\n  id: ID!\n  quantity: Float!\n  ingredient: Ingredient!\n}\n\ntype Sale {\n  id: ID!\n  saleAmount: Float!\n  createdAt: String!\n  recipe: Recipe!\n}\n\ntype Mutation {\n  uploadInvoice(fileName: String!, totalAmount: Float!): Invoice!\n  createRecipe(\n    name: String!\n    ingredientIds: [ID!]!\n    quantities: [Float!]!\n  ): Recipe!\n  recordSale(recipeId: ID!, saleAmount: Float!): Sale!\n}\n\ntype Query {\n  invoices: [Invoice!]!\n  recipes: [Recipe!]!\n  sales: [Sale!]!\n}\n",
+            "ApiId": {
+              "Fn::GetAtt": [
+                "GraphQlApi",
+                "ApiId"
+              ]
+            }
+          }
+        },
+        "GraphQlDsFoodCostLambdaDataSource": {
+          "Type": "AWS::AppSync::DataSource",
+          "Properties": {
+            "ApiId": {
+              "Fn::GetAtt": [
+                "GraphQlApi",
+                "ApiId"
+              ]
+            },
+            "Name": "FoodCostLambdaDataSource",
+            "Type": "AWS_LAMBDA",
+            "LambdaConfig": {
+              "LambdaFunctionArn": "arn:aws:lambda:ap-southeast-2:795796019955:function:food-cost-api-dev-foodCostLambda"
+            },
+            "ServiceRoleArn": {
+              "Fn::GetAtt": [
+                "GraphQlDsFoodCostLambdaDataSourceRole",
+                "Arn"
+              ]
+            }
+          }
+        },
+        "GraphQlDsFoodCostLambdaDataSourceRole": {
+          "Type": "AWS::IAM::Role",
+          "Properties": {
+            "AssumeRolePolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": [
+                      "appsync.amazonaws.com"
+                    ]
+                  },
+                  "Action": [
+                    "sts:AssumeRole"
+                  ]
+                }
+              ]
+            },
+            "Policies": [
+              {
+                "PolicyName": "AppSync-Datasource-FoodCostLambdaDataSource",
+                "PolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Action": [
+                        "lambda:invokeFunction"
+                      ],
+                      "Effect": "Allow",
+                      "Resource": [
+                        "arn:aws:lambda:ap-southeast-2:795796019955:function:food-cost-api-dev-foodCostLambda",
+                        {
+                          "Fn::Join": [
+                            ":",
+                            [
+                              "arn:aws:lambda:ap-southeast-2:795796019955:function:food-cost-api-dev-foodCostLambda",
+                              "*"
+                            ]
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "GraphQlResolverQueryinvoices": {
+          "Type": "AWS::AppSync::Resolver",
+          "DependsOn": [
+            "GraphQlSchema"
+          ],
+          "Properties": {
+            "ApiId": {
+              "Fn::GetAtt": [
+                "GraphQlApi",
+                "ApiId"
+              ]
+            },
+            "TypeName": "Query",
+            "FieldName": "invoices",
+            "Kind": "UNIT",
+            "DataSourceName": {
+              "Fn::GetAtt": [
+                "GraphQlDsFoodCostLambdaDataSource",
+                "Name"
+              ]
+            }
+          }
+        }
+      },
+      "Outputs": {}
+    },
+    "configValidationMode": "warn",
+    "serviceFilename": "serverless",
+    "initialServerlessConfig": {
+      "org": "carlserquina",
+      "app": "food-cost-app",
+      "service": "food-cost-api",
+      "params": {
+        "default": {
+          "domain": "dev.foodcostapi.com"
+        },
+        "dev": {
+          "domain": "dev.foodcostapi.com"
+        }
+      },
+      "provider": {
+        "$ref": "$[\"service\"][\"provider\"]"
+      },
+      "functions": {
+        "$ref": "$[\"service\"][\"functions\"]"
+      },
+      "plugins": {
+        "$ref": "$[\"service\"][\"plugins\"]"
+      },
+      "appSync": {
+        "name": "FoodCostApi",
+        "schema": "./src/schema.graphql",
+        "authentication": {
+          "type": "API_KEY"
+        },
+        "dataSources": {
+          "FoodCostLambdaDataSource": {
+            "type": "AWS_LAMBDA",
+            "config": {
+              "functionArn": "arn:aws:lambda:ap-southeast-2:795796019955:function:food-cost-api-dev-foodCostLambda"
+            }
+          }
+        },
+        "resolvers": {
+          "Query.invoices": {
+            "kind": "UNIT",
+            "dataSource": "FoodCostLambdaDataSource"
+          }
+        }
+      },
+      "package": {
+        "individually": true,
+        "exclude": [
+          "node_modules/**"
+        ],
+        "include": [
+          "lambda.js",
+          "resolvers.js",
+          "data-source.js",
+          "src/schema.graphql"
+        ],
+        "artifactsS3KeyDirname": "serverless/food-cost-api/dev/code-artifacts",
+        "deploymentBucket": "food-cost-deployment-bucket-795796019955",
+        "artifactDirectoryName": "serverless/food-cost-api/dev/1750543608166-2025-06-21T22:06:48.166Z"
+      }
+    },
+    "app": "food-cost-app",
+    "appId": null,
+    "org": "carlserquina",
+    "orgId": null,
+    "layers": {}
+  },
+  "package": {
+    "individually": true,
+    "artifactDirectoryName": "serverless/food-cost-api/dev/1750543608166-2025-06-21T22:06:48.166Z",
+    "artifact": ""
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "lambda-package",
+  "version": "1.0.0",
+  "description": "",
+  "main": "lambda.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@apollo/server": "^4.12.2",
+    "@aws-sdk/client-s3": "^3.832.0",
+    "@aws-sdk/client-textract": "^3.830.0",
+    "apollo-server": "^3.13.0",
+    "dotenv": "^16.5.0",
+    "graphql": "^16.11.0",
+    "pg": "^8.16.2",
+    "reflect-metadata": "^0.2.2",
+    "sequelize": "^6.37.7",
+    "ts-node": "^10.9.2",
+    "typeorm": "^0.3.25",
+    "typescript": "^5.8.3"
+  },
+  "devDependencies": {
+    "serverless-appsync-plugin": "^2.9.1"
+  }
+}
