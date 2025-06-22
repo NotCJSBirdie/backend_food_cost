@@ -29,9 +29,11 @@ provider:
     NODE_ENV: ${opt:stage, 'production'}
   tags:
     environment: ${sls:stage}
+  httpApi:
+    timeout: 30 # Match Lambda timeout
 
 functions:
-  foodCostLambda:
+  FoodCostLambda: # Use PascalCase to match reference
     handler: lambda.handler
     memorySize: 512
     timeout: 30
@@ -52,7 +54,7 @@ appSync:
     FoodCostLambdaDataSource:
       type: AWS_LAMBDA
       config:
-        functionArn: !GetAtt FoodCostLambda.Arn
+        functionName: FoodCostLambda # Reference the function name directly
   resolvers:
     Query.dashboardStats:
       kind: UNIT
