@@ -67,5 +67,3 @@ type Mutation {
   ): Recipe!
   recordSale(recipeId: ID!, saleAmount: Float!, quantitySold: Int!): Sale!
 }
-
-scalar Upload
