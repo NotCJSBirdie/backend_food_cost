@@ -22,10 +22,10 @@ provider:
     name: food-cost-deployment-bucket-795796019955
     blockPublicAccess: true
   environment:
-    DB_USERNAME: ${param:DB_USERNAME, 'foodcostadmin'}
-    DB_PASSWORD: ${param:DB_PASSWORD}
-    DB_NAME: ${param:DB_NAME, 'foodcost'}
-    DB_HOST: ${param:DB_HOST}
+    DB_USERNAME: ${env:DB_USER, 'foodcostadmin'}
+    DB_PASSWORD: ${env:DB_PASSWORD}
+    DB_NAME: ${env:DB_NAME, 'foodcost'}
+    DB_HOST: ${env:DB_HOST}
     NODE_ENV: ${opt:stage, 'production'}
   tags:
     environment: ${sls:stage}
