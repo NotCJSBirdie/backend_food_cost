@@ -3,6 +3,14 @@ require("dotenv").config();
 
 const isLocal = process.env.NODE_ENV === "local";
 
+console.log("Initializing Sequelize with config:", {
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  username: process.env.DB_USER,
+  port: 5432,
+  isLocal,
+});
+
 const sequelize = new Sequelize({
   dialect: "postgres",
   host: process.env.DB_HOST,
@@ -13,7 +21,7 @@ const sequelize = new Sequelize({
   dialectOptions: isLocal
     ? { ssl: false }
     : { ssl: { require: true, rejectUnauthorized: false } },
-  logging: console.log,
+  logging: (msg) => console.log("Sequelize:", msg),
 });
 
 const Ingredient = sequelize.define(
@@ -114,6 +122,7 @@ const RecipeIngredient = sequelize.define(
 );
 
 // Define relationships
+console.log("Defining model relationships...");
 Recipe.hasMany(RecipeIngredient, { foreignKey: "recipeId", as: "ingredients" });
 RecipeIngredient.belongsTo(Recipe, { foreignKey: "recipeId", as: "recipe" });
 RecipeIngredient.belongsTo(Ingredient, {
@@ -139,15 +148,23 @@ console.log("Ingredient associations:", Object.keys(Ingredient.associations));
 // Sync tables in order
 async function syncDatabase() {
   try {
+    console.log("Authenticating database...");
     await sequelize.authenticate();
-    console.log("Database authenticated");
+    console.log("Database authenticated successfully");
+    console.log("Syncing Ingredient table...");
     await Ingredient.sync({ alter: true });
+    console.log("Syncing Recipe table...");
     await Recipe.sync({ alter: true });
+    console.log("Syncing Sale table...");
     await Sale.sync({ alter: true });
+    console.log("Syncing RecipeIngredient table...");
     await RecipeIngredient.sync({ alter: true });
     console.log("Database synced successfully");
   } catch (err) {
-    console.error("Sync error:", err);
+    console.error("Database sync error:", {
+      message: err.message,
+      stack: err.stack,
+    });
     throw err;
   }
 }

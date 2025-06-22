@@ -4,65 +4,95 @@ Object.keys(require.cache).forEach((key) => delete require.cache[key]);
 const { sequelize } = require("./data-source");
 let resolvers;
 try {
+  console.log("Loading resolvers...");
   const resolverModule = require("./resolvers");
   resolvers =
     resolverModule.resolvers || resolverModule.default || resolverModule;
-  console.log("Resolvers loaded:", resolvers);
+  console.log("Resolvers loaded successfully");
 } catch (err) {
-  console.error("Error loading resolvers:", err.stack);
+  console.error("Error loading resolvers:", {
+    message: err.message,
+    stack: err.stack,
+  });
   throw new Error("Failed to load resolvers module");
 }
 
 // Initialize Sequelize during cold start
 async function initializeDatabase() {
   try {
+    console.log("Authenticating database connection...");
     await sequelize.authenticate();
     console.log("Database connection established");
+    console.log("Synchronizing database...");
     await sequelize.sync({ force: false });
     console.log("Database synchronized");
   } catch (err) {
-    console.error("Database initialization error:", err.stack);
+    console.error("Database initialization error:", {
+      message: err.message,
+      stack: err.stack,
+    });
     throw err;
   }
 }
 
 initializeDatabase().catch((err) => {
-  console.error("Failed to initialize database:", err.stack);
+  console.error("Failed to initialize database:", {
+    message: err.message,
+    stack: err.stack,
+  });
   process.exit(1);
 });
 
 // Catch uncaught exceptions
 process.on("uncaughtException", (err) => {
-  console.error("Uncaught Exception:", err.stack);
+  console.error("Uncaught Exception:", {
+    message: err.message,
+    stack: err.stack,
+  });
   process.exit(1);
 });
 
-exports.handler = async (event) => {
-  const { operation, payload } = event;
+// AppSync-compatible Lambda handler
+exports.handler = async (event, context) => {
+  console.log("Lambda invoked with event:", JSON.stringify(event, null, 2));
+  console.log("Lambda context:", JSON.stringify(context, null, 2));
 
+  // Handle AppSync resolver events
   try {
-    let result;
-    switch (operation) {
-      case "getRecipes":
-        result = await resolvers.Query.recipes();
-        break;
-      case "getSales":
-        result = await resolvers.Query.sales();
-        break;
-      case "createRecipe":
-        result = await resolvers.Mutation.createRecipe(null, payload);
-        break;
-      case "recordSale":
-        result = await resolvers.Mutation.recordSale(null, payload);
-        break;
-      default:
-        return {
-          statusCode: 400,
-          body: JSON.stringify({ error: "Unknown operation" }),
-        };
+    // AppSync sends events with fieldName, arguments, and parent
+    const { fieldName, arguments: args, info } = event;
+    console.log("Processing AppSync event:", { fieldName, args });
+
+    if (!resolvers[info?.parentTypeName]?.[fieldName]) {
+      console.error("Resolver not found for:", {
+        parentTypeName: info?.parentTypeName,
+        fieldName,
+      });
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: `Resolver ${fieldName} not found` }),
+      };
     }
-    return { statusCode: 200, body: JSON.stringify(result) };
+
+    const resolver = resolvers[info.parentTypeName][fieldName];
+    console.log(`Executing resolver: ${info.parentTypeName}.${fieldName}`);
+
+    // Execute the resolver with arguments
+    const result = await resolver(null, args, { sequelize });
+    console.log("Resolver result:", JSON.stringify(result, null, 2));
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(result),
+    };
   } catch (error) {
-    return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
+    console.error("Error in Lambda handler:", {
+      message: error.message,
+      stack: error.stack,
+    });
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: error.message }),
+    };
   }
 };
