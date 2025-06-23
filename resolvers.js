@@ -445,6 +445,38 @@ const resolvers = {
       }
     },
   },
+  DashboardStats: {
+    totalSales: (parent) => Number(parent.totalSales) || 0,
+    totalCosts: (parent) => Number(parent.totalCosts) || 0,
+    totalMargin: (parent) => Number(parent.totalMargin) || 0,
+    lowStockIngredients: (parent) => parent.lowStockIngredients || [],
+  },
+  Ingredient: {
+    id: (parent) => String(parent.id),
+    name: (parent) => parent.name || "",
+    unitPrice: (parent) => Number(parent.unitPrice) || 0,
+    unit: (parent) => parent.unit || "",
+    stockQuantity: (parent) => Number(parent.stockQuantity) || 0,
+    restockThreshold: (parent) => Number(parent.restockThreshold) || 0,
+  },
+  Recipe: {
+    id: (parent) => String(parent.id),
+    name: (parent) => parent.name || "",
+    totalCost: (parent) => Number(parent.totalCost) || 0,
+    suggestedPrice: (parent) => Number(parent.suggestedPrice) || 0,
+    ingredients: (parent) => parent.ingredients || [],
+  },
+  RecipeIngredient: {
+    id: (parent) => String(parent.id),
+    quantity: (parent) => Number(parent.quantity) || 0,
+    ingredient: (parent) => parent.ingredient,
+  },
+  Sale: {
+    id: (parent) => String(parent.id),
+    saleAmount: (parent) => Number(parent.saleAmount) || 0,
+    createdAt: (parent) => parent.createdAt || new Date().toISOString(),
+    recipe: (parent) => parent.recipe,
+  },
 };
 
 module.exports = resolvers;
