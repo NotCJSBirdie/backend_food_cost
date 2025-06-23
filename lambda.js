@@ -6,6 +6,7 @@ const {
   Sale,
 } = require("./data-source");
 const { v4: uuidv4 } = require("uuid");
+const { GraphQLError } = require("graphql");
 
 // Initialize database connection on cold start
 let isConnected = false;
@@ -27,7 +28,9 @@ async function initializeDatabase() {
           DB_USER: process.env.DB_USER,
         },
       });
-      throw error;
+      throw new GraphQLError("Database initialization failed", {
+        extensions: { code: "DATABASE_ERROR" },
+      });
     }
   }
 }
@@ -37,7 +40,9 @@ const resolvers = {
     dashboardStats: async (_, __, context) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in dashboardStats");
-        return null;
+        throw new GraphQLError("Sequelize instance missing", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
+        });
       }
       try {
         const sales = await Sale.findAll();
@@ -102,13 +107,17 @@ const resolvers = {
           message: error.message,
           stack: error.stack,
         });
-        return null;
+        throw new GraphQLError("Failed to fetch dashboard stats", {
+          extensions: { code: "DATABASE_ERROR", originalError: error.message },
+        });
       }
     },
     ingredients: async (_, __, context) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in ingredients");
-        return null;
+        throw new GraphQLError("Sequelize instance missing", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
+        });
       }
       try {
         const ingredients = await Ingredient.findAll();
@@ -132,13 +141,17 @@ const resolvers = {
           message: error.message,
           stack: error.stack,
         });
-        return null;
+        throw new GraphQLError("Failed to fetch ingredients", {
+          extensions: { code: "DATABASE_ERROR", originalError: error.message },
+        });
       }
     },
     recipes: async (_, __, context) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in recipes");
-        return null;
+        throw new GraphQLError("Sequelize instance missing", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
+        });
       }
       try {
         const recipes = await Recipe.findAll({
@@ -198,13 +211,17 @@ const resolvers = {
           message: error.message,
           stack: error.stack,
         });
-        return null;
+        throw new GraphQLError("Failed to fetch recipes", {
+          extensions: { code: "DATABASE_ERROR", originalError: error.message },
+        });
       }
     },
     sales: async (_, __, context) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in sales");
-        return null;
+        throw new GraphQLError("Sequelize instance missing", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
+        });
       }
       try {
         const sales = await Sale.findAll({
@@ -270,7 +287,9 @@ const resolvers = {
           message: error.message,
           stack: error.stack,
         });
-        return null;
+        throw new GraphQLError("Failed to fetch sales", {
+          extensions: { code: "DATABASE_ERROR", originalError: error.message },
+        });
       }
     },
   },
@@ -282,7 +301,9 @@ const resolvers = {
     ) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in addIngredient");
-        return null;
+        throw new GraphQLError("Sequelize instance missing", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
+        });
       }
       try {
         const ingredient = await Ingredient.create({
@@ -312,7 +333,9 @@ const resolvers = {
           message: error.message,
           stack: error.stack,
         });
-        return null;
+        throw new GraphQLError("Failed to add ingredient", {
+          extensions: { code: "DATABASE_ERROR", originalError: error.message },
+        });
       }
     },
     createRecipe: async (
@@ -322,7 +345,9 @@ const resolvers = {
     ) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in createRecipe");
-        return null;
+        throw new GraphQLError("Sequelize instance missing", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
+        });
       }
       try {
         if (
@@ -331,7 +356,12 @@ const resolvers = {
           ingredientIds.length !== quantities.length
         ) {
           console.error("Invalid recipe input:", { ingredientIds, quantities });
-          return null;
+          throw new GraphQLError(
+            "Invalid recipe input: ingredient IDs and quantities must match",
+            {
+              extensions: { code: "BAD_USER_INPUT" },
+            }
+          );
         }
 
         const ingredients = await Ingredient.findAll({
@@ -339,7 +369,9 @@ const resolvers = {
         });
         if (ingredients.length !== ingredientIds.length) {
           console.error("Some ingredients not found:", ingredientIds);
-          return null;
+          throw new GraphQLError("Some ingredients not found", {
+            extensions: { code: "NOT_FOUND" },
+          });
         }
 
         let totalCost = 0;
@@ -419,18 +451,24 @@ const resolvers = {
           message: error.message,
           stack: error.stack,
         });
-        return null;
+        throw new GraphQLError("Failed to create recipe", {
+          extensions: { code: "DATABASE_ERROR", originalError: error.message },
+        });
       }
     },
     recordSale: async (_, { recipeId, saleAmount, quantitySold }, context) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in recordSale");
-        return null;
+        throw new GraphQLError("Sequelize instance missing", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
+        });
       }
       try {
         if (!recipeId) {
           console.error("Recipe ID is required");
-          return null;
+          throw new GraphQLError("Recipe ID is required", {
+            extensions: { code: "BAD_USER_INPUT" },
+          });
         }
 
         const recipe = await Recipe.findByPk(recipeId, {
@@ -438,7 +476,9 @@ const resolvers = {
         });
         if (!recipe) {
           console.error(`Recipe ${recipeId} not found`);
-          return null;
+          throw new GraphQLError(`Recipe ${recipeId} not found`, {
+            extensions: { code: "NOT_FOUND" },
+          });
         }
 
         const ingredients = recipe.ingredients || [];
@@ -449,13 +489,23 @@ const resolvers = {
             });
             if (!ingredient) {
               console.error(`Ingredient ${ri.ingredientId} not found`);
-              throw new Error(`Ingredient ${ri.ingredientId} not found`);
+              throw new GraphQLError(
+                `Ingredient ${ri.ingredientId} not found`,
+                {
+                  extensions: { code: "NOT_FOUND" },
+                }
+              );
             }
             const stockDeduction = ri.quantity * (quantitySold || 0);
             const newStock = (ingredient.stockQuantity || 0) - stockDeduction;
             if (newStock < 0) {
               console.error(`Insufficient stock for ${ingredient.name}`);
-              throw new Error(`Insufficient stock for ${ingredient.name}`);
+              throw new GraphQLError(
+                `Insufficient stock for ${ingredient.name}`,
+                {
+                  extensions: { code: "BAD_USER_INPUT" },
+                }
+              );
             }
             await ingredient.update(
               { stockQuantity: newStock },
@@ -535,24 +585,29 @@ const resolvers = {
           message: error.message,
           stack: error.stack,
         });
-        return null;
+        throw new GraphQLError("Failed to record sale", {
+          extensions: { code: "DATABASE_ERROR", originalError: error.message },
+        });
       }
     },
     deleteIngredient: async (_, { id }, context) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in deleteIngredient");
-        return false;
+        throw new GraphQLError("Sequelize instance missing", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
+        });
       }
       try {
         console.log(`Attempting to delete ingredient ${id}`);
         const ingredient = await Ingredient.findByPk(id);
         if (!ingredient) {
           console.error(`Ingredient ${id} not found`);
-          return false;
+          throw new GraphQLError(`Ingredient ${id} not found`, {
+            extensions: { code: "NOT_FOUND" },
+          });
         }
 
         await context.sequelize.transaction(async (t) => {
-          // Delete associated RecipeIngredient records
           const recipeIngredients = await RecipeIngredient.findAll({
             where: { ingredientId: id },
             transaction: t,
@@ -564,7 +619,6 @@ const resolvers = {
             where: { ingredientId: id },
             transaction: t,
           });
-          // Delete the ingredient
           console.log(`Deleting ingredient ${id}`);
           await ingredient.destroy({ transaction: t });
         });
@@ -577,24 +631,29 @@ const resolvers = {
           stack: error.stack,
           ingredientId: id,
         });
-        return false;
+        throw new GraphQLError("Failed to delete ingredient", {
+          extensions: { code: "DATABASE_ERROR", originalError: error.message },
+        });
       }
     },
     deleteRecipe: async (_, { id }, context) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in deleteRecipe");
-        return false;
+        throw new GraphQLError("Sequelize instance missing", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
+        });
       }
       try {
         console.log(`Attempting to delete recipe ${id}`);
         const recipe = await Recipe.findByPk(id);
         if (!recipe) {
           console.error(`Recipe ${id} not found`);
-          return false;
+          throw new GraphQLError(`Recipe ${id} not found`, {
+            extensions: { code: "NOT_FOUND" },
+          });
         }
 
         await context.sequelize.transaction(async (t) => {
-          // Delete associated sales and restore stock
           const sales = await Sale.findAll({
             where: { recipeId: id },
             include: [
@@ -644,7 +703,6 @@ const resolvers = {
             await sale.destroy({ transaction: t });
           }
 
-          // Delete associated recipe ingredients
           const recipeIngredients = await RecipeIngredient.findAll({
             where: { recipeId: id },
             transaction: t,
@@ -657,7 +715,6 @@ const resolvers = {
             transaction: t,
           });
 
-          // Delete the recipe
           console.log(`Deleting recipe ${id}`);
           await recipe.destroy({ transaction: t });
         });
@@ -670,20 +727,26 @@ const resolvers = {
           stack: error.stack,
           recipeId: id,
         });
-        return false;
+        throw new GraphQLError("Failed to delete recipe", {
+          extensions: { code: "DATABASE_ERROR", originalError: error.message },
+        });
       }
     },
     deleteSale: async (_, { id }, context) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in deleteSale");
-        return false;
+        throw new GraphQLError("Sequelize instance missing", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
+        });
       }
       try {
         console.log(`Attempting to delete sale ${id}`);
         const sale = await Sale.findByPk(id);
         if (!sale) {
           console.error(`Sale ${id} not found`);
-          return false;
+          throw new GraphQLError(`Sale ${id} not found`, {
+            extensions: { code: "NOT_FOUND" },
+          });
         }
 
         const recipe = await Recipe.findByPk(sale.recipeId, {
@@ -691,7 +754,9 @@ const resolvers = {
         });
         if (!recipe) {
           console.error(`Recipe ${sale.recipeId} not found for sale ${id}`);
-          return false;
+          throw new GraphQLError(`Recipe ${sale.recipeId} not found`, {
+            extensions: { code: "NOT_FOUND" },
+          });
         }
 
         await context.sequelize.transaction(async (t) => {
@@ -743,7 +808,9 @@ const resolvers = {
           stack: error.stack,
           saleId: id,
         });
-        return false;
+        throw new GraphQLError("Failed to delete sale", {
+          extensions: { code: "DATABASE_ERROR", originalError: error.message },
+        });
       }
     },
   },
@@ -763,7 +830,14 @@ exports.handler = async (event) => {
     await initializeDatabase();
   } catch (error) {
     console.error("Database initialization error:", error);
-    return null;
+    return {
+      errors: [
+        {
+          message: "Database initialization failed",
+          extensions: { code: "DATABASE_ERROR" },
+        },
+      ],
+    };
   }
 
   const context = { sequelize };
@@ -773,7 +847,12 @@ exports.handler = async (event) => {
 
     if (!resolver) {
       console.error(`Resolver not found for ${parentTypeName}.${fieldName}`);
-      return null;
+      throw new GraphQLError(
+        `Resolver not found for ${parentTypeName}.${fieldName}`,
+        {
+          extensions: { code: "NOT_FOUND" },
+        }
+      );
     }
 
     const result = await resolver(parent, args, context, {
@@ -792,6 +871,26 @@ exports.handler = async (event) => {
       stack: error.stack,
       event: JSON.stringify(event, null, 2),
     });
-    return null;
+    if (error instanceof GraphQLError) {
+      return {
+        errors: [
+          {
+            message: error.message,
+            extensions: error.extensions,
+          },
+        ],
+      };
+    }
+    return {
+      errors: [
+        {
+          message: "Unexpected error occurred",
+          extensions: {
+            code: "INTERNAL_SERVER_ERROR",
+            originalError: error.message,
+          },
+        },
+      ],
+    };
   }
 };
