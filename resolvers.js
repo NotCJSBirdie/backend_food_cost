@@ -51,6 +51,12 @@ const resolvers = {
               restockThreshold: Number(ing.restockThreshold) || 0,
             })) || [];
 
+        console.log("DashboardStats:", {
+          totalSales,
+          totalCosts,
+          totalMargin,
+          lowStockIngredients,
+        });
         return {
           totalSales,
           totalCosts,
@@ -70,7 +76,7 @@ const resolvers = {
     ingredients: async (_, __, { sequelize }) => {
       try {
         const ingredients = await Ingredient.findAll();
-        return (
+        const result =
           ingredients.map((ing) => ({
             id: String(ing.id),
             name: ing.name || "",
@@ -78,8 +84,9 @@ const resolvers = {
             unit: ing.unit || "",
             stockQuantity: Number(ing.stockQuantity) || 0,
             restockThreshold: Number(ing.restockThreshold) || 0,
-          })) || []
-        );
+          })) || [];
+        console.log("Ingredients:", result);
+        return result;
       } catch (error) {
         console.error("Error in ingredients:", error);
         return [];
@@ -99,7 +106,7 @@ const resolvers = {
             },
           ],
         });
-        return (
+        const result =
           recipes.map((recipe) => {
             const ingredients =
               recipe.ingredients?.filter((ri) => ri.ingredient) || [];
@@ -126,8 +133,9 @@ const resolvers = {
                 },
               })),
             };
-          }) || []
-        );
+          }) || [];
+        console.log("Recipes:", result);
+        return result;
       } catch (error) {
         console.error("Error in recipes:", error);
         return [];
@@ -154,7 +162,7 @@ const resolvers = {
             },
           ],
         });
-        return (
+        const result =
           sales.map((sale) => {
             const recipeIngredients =
               sale.recipe?.ingredients?.filter((ri) => ri.ingredient) || [];
@@ -183,8 +191,9 @@ const resolvers = {
                 })),
               },
             };
-          }) || []
-        );
+          }) || [];
+        console.log("Sales:", result);
+        return result;
       } catch (error) {
         console.error("Error in sales:", error);
         return [];
@@ -308,18 +317,19 @@ const resolvers = {
           name: savedRecipe.name,
           totalCost,
           suggestedPrice: Number(savedRecipe.suggestedPrice),
-          ingredients: savedRecipe.ingredients.map((ri) => ({
-            id: String(ri.id),
-            quantity: Number(ri.quantity),
-            ingredient: {
-              id: String(ri.ingredient.id),
-              name: ri.ingredient.name,
-              unitPrice: Number(ri.ingredient.unitPrice),
-              unit: ri.ingredient.unit,
-              stockQuantity: Number(ri.ingredient.stockQuantity),
-              restockThreshold: Number(ri.ingredient.restockThreshold),
-            },
-          })),
+          ingredients:
+            savedRecipe.ingredients?.map((ri) => ({
+              id: String(ri.id),
+              quantity: Number(ri.quantity),
+              ingredient: {
+                id: String(ri.ingredient.id),
+                name: ri.ingredient.name,
+                unitPrice: Number(ri.ingredient.unitPrice),
+                unit: ri.ingredient.unit,
+                stockQuantity: Number(ri.ingredient.stockQuantity),
+                restockThreshold: Number(ri.ingredient.restockThreshold),
+              },
+            })) || [],
         };
       } catch (error) {
         console.error("Error in createRecipe:", error);

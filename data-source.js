@@ -13,7 +13,7 @@ if (missingEnvVars.length) {
   );
 }
 
-// Initialize Sequelize with individual options
+// Initialize Sequelize
 const sequelize = new Sequelize({
   dialect: "postgres",
   host: process.env.DB_HOST,
@@ -32,9 +32,8 @@ const Ingredient = sequelize.define(
   "Ingredient",
   {
     id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING, // Match your database's string IDs
       primaryKey: true,
-      autoIncrement: true,
     },
     name: {
       type: DataTypes.STRING,
@@ -64,16 +63,15 @@ const Ingredient = sequelize.define(
       validate: { min: 0 },
     },
   },
-  { tableName: "Ingredient" }
+  { tableName: "Ingredient", timestamps: false } // Disable timestamps
 );
 
 const Recipe = sequelize.define(
   "Recipe",
   {
     id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING, // Match string IDs
       primaryKey: true,
-      autoIncrement: true,
     },
     name: {
       type: DataTypes.STRING,
@@ -93,7 +91,7 @@ const Recipe = sequelize.define(
       validate: { min: 0 },
     },
   },
-  { tableName: "Recipe" }
+  { tableName: "Recipe", timestamps: false } // Disable timestamps
 );
 
 const Sale = sequelize.define(
@@ -110,14 +108,14 @@ const Sale = sequelize.define(
       validate: { min: 0 },
     },
     recipeId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING, // Match string recipeId
       allowNull: false,
       references: { model: Recipe, key: "id" },
       onDelete: "RESTRICT",
       onUpdate: "CASCADE",
     },
   },
-  { tableName: "Sale", timestamps: true }
+  { tableName: "Sale", timestamps: true } // Keep timestamps
 );
 
 const RecipeIngredient = sequelize.define(
@@ -134,21 +132,21 @@ const RecipeIngredient = sequelize.define(
       validate: { min: 0 },
     },
     recipeId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING, // Match string recipeId
       allowNull: false,
       references: { model: Recipe, key: "id" },
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
     },
     ingredientId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING, // Match string ingredientId
       allowNull: false,
       references: { model: Ingredient, key: "id" },
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
     },
   },
-  { tableName: "RecipeIngredient" }
+  { tableName: "RecipeIngredient", timestamps: false } // Disable timestamps
 );
 
 // Define relationships
@@ -179,10 +177,10 @@ async function testConnection() {
   }
 }
 
-// Export syncDatabase for index.js
+// Sync database
 async function syncDatabase() {
   try {
-    await sequelize.sync({ force: false });
+    await sequelize.sync({ force: false }); // Don't drop tables
     console.log("Database synced successfully");
   } catch (error) {
     console.error("Database sync error:", {
