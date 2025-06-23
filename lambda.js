@@ -1,7 +1,5 @@
-// lambda.js
-Object.keys(require.cache).forEach((key) => delete require.cache[key]);
-
 const { sequelize } = require("./data-source");
+
 let resolvers;
 try {
   console.log("Loading resolvers...");
@@ -18,31 +16,23 @@ try {
 }
 
 // Initialize Sequelize during cold start
+let isDbInitialized = false;
 async function initializeDatabase() {
+  if (isDbInitialized) return true;
   try {
     console.log("Authenticating database connection...");
     await sequelize.authenticate();
     console.log("Database connection established");
-    console.log("Synchronizing database...");
-    await sequelize.sync({ force: false });
-    console.log("Database synchronized");
+    isDbInitialized = true;
+    return true;
   } catch (err) {
     console.error("Database initialization error:", {
       message: err.message,
       stack: err.stack,
     });
-    // Log error but don't exit; let handler proceed
-    return false;
+    throw err; // Throw to fail fast
   }
 }
-
-initializeDatabase().catch((err) => {
-  console.error("Failed to initialize database:", {
-    message: err.message,
-    stack: err.stack,
-  });
-  // Log error but don't exit
-});
 
 // Catch uncaught exceptions
 process.on("uncaughtException", (err) => {
@@ -50,7 +40,6 @@ process.on("uncaughtException", (err) => {
     message: err.message,
     stack: err.stack,
   });
-  // Log error but don't exit
 });
 
 // AppSync-compatible Lambda handler
@@ -59,6 +48,9 @@ exports.handler = async (event, context) => {
   console.log("Lambda context:", JSON.stringify(context, null, 2));
 
   try {
+    // Initialize database
+    await initializeDatabase();
+
     const { fieldName, arguments: args, info } = event;
     console.log("Processing AppSync event:", { fieldName, args });
 
@@ -67,10 +59,7 @@ exports.handler = async (event, context) => {
         parentTypeName: info?.parentTypeName,
         fieldName,
       });
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: `Resolver ${fieldName} not found` }),
-      };
+      throw new Error(`Resolver ${fieldName} not found`);
     }
 
     const resolver = resolvers[info.parentTypeName][fieldName];
@@ -79,18 +68,16 @@ exports.handler = async (event, context) => {
     const result = await resolver(null, args, { sequelize });
     console.log("Resolver result:", JSON.stringify(result, null, 2));
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(result),
-    };
+    return result; // Return result directly for AppSync
   } catch (error) {
     console.error("Error in Lambda handler:", {
       message: error.message,
       stack: error.stack,
     });
     return {
-      statusCode: 500,
-      body: JSON.stringify({ error: error.message }),
-    };
+      errorType: error.name || "Error",
+      errorMessage: error.message,
+      stackTrace: error.stack,
+    }; // AppSync error format
   }
 };
