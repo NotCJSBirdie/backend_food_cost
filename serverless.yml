@@ -113,6 +113,21 @@ appSync:
       dataSource: FoodCostLambdaDataSource
       request: vtl/recordSale/request.vtl
       response: vtl/recordSale/response.vtl
+    Mutation.deleteIngredient:
+      kind: UNIT
+      dataSource: FoodCostLambdaDataSource
+      request: vtl/deleteIngredient/request.vtl
+      response: vtl/deleteIngredient/response.vtl
+    Mutation.deleteRecipe:
+      kind: UNIT
+      dataSource: FoodCostLambdaDataSource
+      request: vtl/deleteRecipe/request.vtl
+      response: vtl/deleteRecipe/response.vtl
+    Mutation.deleteSale:
+      kind: UNIT
+      dataSource: FoodCostLambdaDataSource
+      request: vtl/deleteSale/request.vtl
+      response: vtl/deleteSale/response.vtl
 
 package:
   individually: true

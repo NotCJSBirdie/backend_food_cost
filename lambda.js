@@ -542,6 +542,122 @@ const resolvers = {
         return null;
       }
     },
+    deleteIngredient: async (_, { id }, context) => {
+      if (!context.sequelize) {
+        console.error("Sequelize instance missing in deleteIngredient");
+        return false;
+      }
+      try {
+        const ingredient = await Ingredient.findByPk(id);
+        if (!ingredient) {
+          console.error(`Ingredient ${id} not found`);
+          return false;
+        }
+
+        // Check if ingredient is used in any recipes
+        const recipeIngredients = await RecipeIngredient.findAll({
+          where: { ingredientId: id },
+        });
+        if (recipeIngredients.length > 0) {
+          console.error(`Ingredient ${id} is used in recipes`);
+          return false;
+        }
+
+        await ingredient.destroy();
+        console.log(`Ingredient ${id} deleted successfully`);
+        return true;
+      } catch (error) {
+        console.error("Error in deleteIngredient:", {
+          message: error.message,
+          stack: error.stack,
+        });
+        return false;
+      }
+    },
+    deleteRecipe: async (_, { id }, context) => {
+      if (!context.sequelize) {
+        console.error("Sequelize instance missing in deleteRecipe");
+        return false;
+      }
+      try {
+        const recipe = await Recipe.findByPk(id);
+        if (!recipe) {
+          console.error(`Recipe ${id} not found`);
+          return false;
+        }
+
+        // Check if recipe has associated sales
+        const sales = await Sale.findAll({
+          where: { recipeId: id },
+        });
+        if (sales.length > 0) {
+          console.error(`Recipe ${id} has associated sales`);
+          return false;
+        }
+
+        await context.sequelize.transaction(async (t) => {
+          // Delete associated recipe ingredients
+          await RecipeIngredient.destroy({
+            where: { recipeId: id },
+            transaction: t,
+          });
+          // Delete recipe
+          await recipe.destroy({ transaction: t });
+        });
+
+        console.log(`Recipe ${id} deleted successfully`);
+        return true;
+      } catch (error) {
+        console.error("Error in deleteRecipe:", {
+          message: error.message,
+          stack: error.stack,
+        });
+        return false;
+      }
+    },
+    deleteSale: async (_, { id }, context) => {
+      if (!context.sequelize) {
+        console.error("Sequelize instance missing in deleteSale");
+        return false;
+      }
+      try {
+        const sale = await Sale.findByPk(id);
+        if (!sale) {
+          console.error(`Sale ${id} not found`);
+          return false;
+        }
+
+        // Restore ingredient stock quantities
+        const recipe = await Recipe.findByPk(sale.recipeId, {
+          include: [{ model: RecipeIngredient, as: "ingredients" }],
+        });
+
+        await context.sequelize.transaction(async (t) => {
+          for (const ri of recipe.ingredients) {
+            const ingredient = await Ingredient.findByPk(ri.ingredientId, {
+              transaction: t,
+            });
+            if (ingredient) {
+              const newStock = (ingredient.stockQuantity || 0) + ri.quantity;
+              await ingredient.update(
+                { stockQuantity: newStock },
+                { transaction: t }
+              );
+            }
+          }
+          await sale.destroy({ transaction: t });
+        });
+
+        console.log(`Sale ${id} deleted successfully`);
+        return true;
+      } catch (error) {
+        console.error("Error in deleteSale:", {
+          message: error.message,
+          stack: error.stack,
+        });
+        return false;
+      }
+    },
   },
 };
 

@@ -50,6 +50,9 @@ type Mutation {
     targetMargin: Float
   ): Recipe
   recordSale(recipeId: ID, saleAmount: Float, quantitySold: Int): Sale
+  deleteIngredient(id: ID!): Boolean
+  deleteRecipe(id: ID!): Boolean
+  deleteSale(id: ID!): Boolean
 }
 
 type Query {
