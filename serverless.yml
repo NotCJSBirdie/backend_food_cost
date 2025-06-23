@@ -2,7 +2,7 @@ org: carlserquina
 app: food-cost-app
 service: food-cost-api
 
-frameworkVersion: ~4.17.1
+frameworkVersion: ^4
 
 params:
   default:
@@ -20,6 +20,7 @@ provider:
   deploymentBucket:
     name: food-cost-deployment-bucket-795796019955
     blockPublicAccess: true
+    serverSideEncryption: AES256
   environment:
     DB_USER: ${env:DB_USER, 'foodcostadmin'}
     DB_PASSWORD: ${env:DB_PASSWORD}
@@ -31,6 +32,12 @@ provider:
   iam:
     role:
       statements:
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:DeleteObject
+          Resource: "arn:aws:s3:::food-cost-deployment-bucket-795796019955/*"
         - Effect: Allow
           Action:
             - logs:CreateLogGroup
@@ -46,19 +53,19 @@ functions:
   FoodCostLambda:
     handler: lambda.handler
     memorySize: 512
-    timeout: 29
-    events:
-      - http:
-          path: /{proxy+}
-          method: ANY
-          cors:
-            origin: "*"
-            headers:
-              - Content-Type
-              - Authorization
-              - X-Amz-Date
-              - X-Api-Key
-            allowCredentials: false
+    timeout: 29 # Set to 29 to match API Gateway
+    package:
+      individually: true
+      patterns:
+        - lambda.js
+        - resolvers.js
+        - resolver.js
+        - data-source.js
+        - "!node_modules/**"
+        - "node_modules/sequelize/**"
+        - "node_modules/pg/**"
+        - "node_modules/pg-hstore/**"
+        - "node_modules/uuid/**"
 
 plugins:
   - serverless-appsync-plugin
@@ -67,7 +74,7 @@ appSync:
   name: FoodCostApi
   authentication:
     type: API_KEY
-  schema: ./src/schema.graphql
+  schema: src/schema.graphql
   dataSources:
     FoodCostLambdaDataSource:
       type: AWS_LAMBDA
@@ -106,13 +113,5 @@ appSync:
 package:
   individually: true
   patterns:
-    - lambda.js
-    - resolvers.js
-    - resolver.js
-    - data-source.js
     - src/schema.graphql
-    - node_modules/sequelize/**
-    - node_modules/pg/**
-    - node_modules/pg-hstore/**
-    - node_modules/uuid/**
-    - "!node_modules/**" # Exclude all other node_modules
+    - "!**" # Exclude all other files not explicitly included
