@@ -59,7 +59,6 @@ functions:
               - X-Amz-Date
               - X-Api-Key
             allowCredentials: false
-          timeout: 30 # Match Lambda timeout
 
 plugins:
   - serverless-appsync-plugin
