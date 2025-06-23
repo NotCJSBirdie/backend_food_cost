@@ -59,6 +59,7 @@ functions:
               - X-Amz-Date
               - X-Api-Key
             allowCredentials: false
+          timeout: 30 # Match Lambda timeout
 
 plugins:
   - serverless-appsync-plugin
@@ -68,18 +69,47 @@ appSync:
   authentication:
     type: API_KEY
   schema: ./src/schema.graphql
-  useResolverFunctions: true
   dataSources:
     FoodCostLambdaDataSource:
       type: AWS_LAMBDA
       config:
         functionName: FoodCostLambda
+  resolvers:
+    Query.dashboardStats:
+      kind: UNIT
+      dataSource: FoodCostLambdaDataSource
+      code: resolver.js
+    Query.ingredients:
+      kind: UNIT
+      dataSource: FoodCostLambdaDataSource
+      code: resolver.js
+    Query.recipes:
+      kind: UNIT
+      dataSource: FoodCostLambdaDataSource
+      code: resolver.js
+    Query.sales:
+      kind: UNIT
+      dataSource: FoodCostLambdaDataSource
+      code: resolver.js
+    Mutation.addIngredient:
+      kind: UNIT
+      dataSource: FoodCostLambdaDataSource
+      code: resolver.js
+    Mutation.createRecipe:
+      kind: UNIT
+      dataSource: FoodCostLambdaDataSource
+      code: resolver.js
+    Mutation.recordSale:
+      kind: UNIT
+      dataSource: FoodCostLambdaDataSource
+      code: resolver.js
 
 package:
   individually: true
   include:
     - lambda.js
     - resolvers.js
+    - resolver.js
     - data-source.js
     - src/schema.graphql
     - node_modules/**

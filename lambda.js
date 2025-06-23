@@ -21,7 +21,7 @@ async function initializeDatabase() {
           DB_USER: process.env.DB_USER,
         },
       });
-      throw new Error("Database initialization failed");
+      throw error;
     }
   }
 }
@@ -29,37 +29,33 @@ async function initializeDatabase() {
 exports.handler = async (event) => {
   console.log("Lambda event:", JSON.stringify(event, null, 2));
 
+  // Extract resolver details
+  const parentTypeName = event.info?.parentTypeName || "Unknown";
+  const fieldName = event.info?.fieldName || "unknown";
+  const args = event.arguments || {};
+  const parent = event.source || null;
+
+  // Log context
+  console.log(`Processing ${parentTypeName}.${fieldName}`);
+
   // Initialize database
   try {
     await initializeDatabase();
   } catch (error) {
     console.error("Database initialization error:", error);
-    return {
-      __typename: "Error",
-      message: "Failed to connect to database",
-      type: "DatabaseError",
-    };
+    return null; // Nullable schema allows null
   }
 
-  // Extract resolver details from the event
-  const {
-    fieldName,
-    parentTypeName,
-    arguments: args,
-    identity,
-    source: parent,
-  } = event;
-
-  // Context to pass to resolvers
+  // Context for resolvers
   const context = { sequelize };
 
   try {
-    // Map the resolver based on parentTypeName and fieldName
+    // Map the resolver
     const resolver = resolvers[parentTypeName]?.[fieldName];
 
     if (!resolver) {
       console.error(`Resolver not found for ${parentTypeName}.${fieldName}`);
-      throw new Error(`Resolver not found for ${parentTypeName}.${fieldName}`);
+      return null;
     }
 
     // Execute the resolver
@@ -72,32 +68,6 @@ exports.handler = async (event) => {
       `Resolver result for ${parentTypeName}.${fieldName}:`,
       JSON.stringify(result, null, 2)
     );
-
-    // Validate result against schema expectations
-    if (parentTypeName === "Query") {
-      if (
-        fieldName === "dashboardStats" &&
-        (!result || typeof result !== "object")
-      ) {
-        console.error(`Invalid dashboardStats result:`, result);
-        return {
-          totalSales: 0,
-          totalCosts: 0,
-          totalMargin: 0,
-          lowStockIngredients: [],
-        };
-      }
-      if (
-        (fieldName === "ingredients" ||
-          fieldName === "recipes" ||
-          fieldName === "sales") &&
-        !Array.isArray(result)
-      ) {
-        console.error(`Invalid ${fieldName} result, expected array:`, result);
-        return [];
-      }
-    }
-
     return result;
   } catch (error) {
     console.error(`Error in ${parentTypeName}.${fieldName}:`, {
@@ -105,30 +75,6 @@ exports.handler = async (event) => {
       stack: error.stack,
       event: JSON.stringify(event, null, 2),
     });
-
-    // Return schema-compliant fallback values for Query fields
-    if (parentTypeName === "Query") {
-      if (fieldName === "dashboardStats") {
-        return {
-          totalSales: 0,
-          totalCosts: 0,
-          totalMargin: 0,
-          lowStockIngredients: [],
-        };
-      }
-      if (
-        fieldName === "ingredients" ||
-        fieldName === "recipes" ||
-        fieldName === "sales"
-      ) {
-        return [];
-      }
-    }
-
-    return {
-      __typename: "Error",
-      message: error.message || "Internal server error",
-      type: error.name || "InternalError",
-    };
+    return null; // Nullable schema allows null
   }
 };
