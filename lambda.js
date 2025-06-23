@@ -602,7 +602,7 @@ const resolvers = {
         const ingredient = await Ingredient.findByPk(id);
         if (!ingredient) {
           console.error(`Ingredient ${id} not found`);
-          return false;
+          return { success: false, error: `Ingredient ${id} not found` };
         }
 
         await context.sequelize.transaction(async (t) => {
@@ -622,14 +622,16 @@ const resolvers = {
         });
 
         console.log(`Ingredient ${id} deleted successfully`);
-        return true;
+        return { success: true };
       } catch (error) {
         console.error("Error in deleteIngredient:", {
           message: error.message,
           stack: error.stack,
           ingredientId: id,
         });
-        return false;
+        throw new GraphQLError("Failed to delete ingredient", {
+          extensions: { code: "DATABASE_ERROR", originalError: error.message },
+        });
       }
     },
     deleteRecipe: async (_, { id }, context) => {
@@ -644,7 +646,7 @@ const resolvers = {
         const recipe = await Recipe.findByPk(id);
         if (!recipe) {
           console.error(`Recipe ${id} not found`);
-          return false;
+          return { success: false, error: `Recipe ${id} not found` };
         }
 
         await context.sequelize.transaction(async (t) => {
@@ -714,14 +716,16 @@ const resolvers = {
         });
 
         console.log(`Recipe ${id} deleted successfully`);
-        return true;
+        return { success: true };
       } catch (error) {
         console.error("Error in deleteRecipe:", {
           message: error.message,
           stack: error.stack,
           recipeId: id,
         });
-        return false;
+        throw new GraphQLError("Failed to delete recipe", {
+          extensions: { code: "DATABASE_ERROR", originalError: error.message },
+        });
       }
     },
     deleteSale: async (_, { id }, context) => {
@@ -736,7 +740,7 @@ const resolvers = {
         const sale = await Sale.findByPk(id);
         if (!sale) {
           console.error(`Sale ${id} not found`);
-          return false;
+          return { success: false, error: `Sale ${id} not found` };
         }
 
         const recipe = await Recipe.findByPk(sale.recipeId, {
@@ -744,7 +748,7 @@ const resolvers = {
         });
         if (!recipe) {
           console.error(`Recipe ${sale.recipeId} not found for sale ${id}`);
-          return false;
+          return { success: false, error: `Recipe ${sale.recipeId} not found` };
         }
 
         await context.sequelize.transaction(async (t) => {
@@ -789,14 +793,16 @@ const resolvers = {
         });
 
         console.log(`Sale ${id} deleted successfully`);
-        return true;
+        return { success: true };
       } catch (error) {
         console.error("Error in deleteSale:", {
           message: error.message,
           stack: error.stack,
           saleId: id,
         });
-        return false;
+        throw new GraphQLError("Failed to delete sale", {
+          extensions: { code: "DATABASE_ERROR", originalError: error.message },
+        });
       }
     },
   },
