@@ -602,9 +602,7 @@ const resolvers = {
         const ingredient = await Ingredient.findByPk(id);
         if (!ingredient) {
           console.error(`Ingredient ${id} not found`);
-          throw new GraphQLError(`Ingredient ${id} not found`, {
-            extensions: { code: "NOT_FOUND" },
-          });
+          return false;
         }
 
         await context.sequelize.transaction(async (t) => {
@@ -631,9 +629,7 @@ const resolvers = {
           stack: error.stack,
           ingredientId: id,
         });
-        throw new GraphQLError("Failed to delete ingredient", {
-          extensions: { code: "DATABASE_ERROR", originalError: error.message },
-        });
+        return false;
       }
     },
     deleteRecipe: async (_, { id }, context) => {
@@ -648,9 +644,7 @@ const resolvers = {
         const recipe = await Recipe.findByPk(id);
         if (!recipe) {
           console.error(`Recipe ${id} not found`);
-          throw new GraphQLError(`Recipe ${id} not found`, {
-            extensions: { code: "NOT_FOUND" },
-          });
+          return false;
         }
 
         await context.sequelize.transaction(async (t) => {
@@ -727,9 +721,7 @@ const resolvers = {
           stack: error.stack,
           recipeId: id,
         });
-        throw new GraphQLError("Failed to delete recipe", {
-          extensions: { code: "DATABASE_ERROR", originalError: error.message },
-        });
+        return false;
       }
     },
     deleteSale: async (_, { id }, context) => {
@@ -744,9 +736,7 @@ const resolvers = {
         const sale = await Sale.findByPk(id);
         if (!sale) {
           console.error(`Sale ${id} not found`);
-          throw new GraphQLError(`Sale ${id} not found`, {
-            extensions: { code: "NOT_FOUND" },
-          });
+          return false;
         }
 
         const recipe = await Recipe.findByPk(sale.recipeId, {
@@ -754,9 +744,7 @@ const resolvers = {
         });
         if (!recipe) {
           console.error(`Recipe ${sale.recipeId} not found for sale ${id}`);
-          throw new GraphQLError(`Recipe ${sale.recipeId} not found`, {
-            extensions: { code: "NOT_FOUND" },
-          });
+          return false;
         }
 
         await context.sequelize.transaction(async (t) => {
@@ -808,9 +796,7 @@ const resolvers = {
           stack: error.stack,
           saleId: id,
         });
-        throw new GraphQLError("Failed to delete sale", {
-          extensions: { code: "DATABASE_ERROR", originalError: error.message },
-        });
+        return false;
       }
     },
   },
@@ -831,10 +817,11 @@ exports.handler = async (event) => {
   } catch (error) {
     console.error("Database initialization error:", error);
     return {
+      data: null,
       errors: [
         {
           message: "Database initialization failed",
-          extensions: { code: "DATABASE_ERROR" },
+          extensions: { code: "DATABASE_ERROR", originalError: error.message },
         },
       ],
     };
@@ -847,12 +834,15 @@ exports.handler = async (event) => {
 
     if (!resolver) {
       console.error(`Resolver not found for ${parentTypeName}.${fieldName}`);
-      throw new GraphQLError(
-        `Resolver not found for ${parentTypeName}.${fieldName}`,
-        {
-          extensions: { code: "NOT_FOUND" },
-        }
-      );
+      return {
+        data: null,
+        errors: [
+          {
+            message: `Resolver not found for ${parentTypeName}.${fieldName}`,
+            extensions: { code: "NOT_FOUND" },
+          },
+        ],
+      };
     }
 
     const result = await resolver(parent, args, context, {
@@ -871,22 +861,13 @@ exports.handler = async (event) => {
       stack: error.stack,
       event: JSON.stringify(event, null, 2),
     });
-    if (error instanceof GraphQLError) {
-      return {
-        errors: [
-          {
-            message: error.message,
-            extensions: error.extensions,
-          },
-        ],
-      };
-    }
     return {
+      data: null,
       errors: [
         {
-          message: "Unexpected error occurred",
+          message: error.message,
           extensions: {
-            code: "INTERNAL_SERVER_ERROR",
+            code: error.extensions?.code || "INTERNAL_SERVER_ERROR",
             originalError: error.message,
           },
         },
