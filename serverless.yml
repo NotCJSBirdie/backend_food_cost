@@ -105,10 +105,14 @@ appSync:
 
 package:
   individually: true
-  include:
+  patterns:
     - lambda.js
     - resolvers.js
     - resolver.js
     - data-source.js
     - src/schema.graphql
-    - node_modules/**
+    - node_modules/sequelize/**
+    - node_modules/pg/**
+    - node_modules/pg-hstore/**
+    - node_modules/uuid/**
+    - "!node_modules/**" # Exclude all other node_modules
