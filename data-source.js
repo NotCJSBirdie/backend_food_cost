@@ -13,12 +13,14 @@ if (missingEnvVars.length) {
   );
 }
 
-// Use a connection string for AWS RDS
-const connectionString = `postgres://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:5432/${process.env.DB_NAME}`;
-
-// Initialize Sequelize
-const sequelize = new Sequelize(connectionString, {
+// Initialize Sequelize with individual options
+const sequelize = new Sequelize({
   dialect: "postgres",
+  host: process.env.DB_HOST,
+  port: 5432,
+  username: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   dialectOptions: {
     ssl: isProduction ? { require: true, rejectUnauthorized: false } : false,
   },
@@ -177,6 +179,20 @@ async function testConnection() {
   }
 }
 
+// Export syncDatabase for index.js
+async function syncDatabase() {
+  try {
+    await sequelize.sync({ force: false });
+    console.log("Database synced successfully");
+  } catch (error) {
+    console.error("Database sync error:", {
+      message: error.message,
+      stack: error.stack,
+    });
+    throw error;
+  }
+}
+
 module.exports = {
   sequelize,
   Ingredient,
@@ -184,4 +200,5 @@ module.exports = {
   RecipeIngredient,
   Sale,
   testConnection,
+  syncDatabase,
 };

@@ -5,53 +5,51 @@ const resolvers = {
   Query: {
     dashboardStats: async (_, __, { sequelize }) => {
       try {
-        // Fetch sales
         const sales = await Sale.findAll();
-        const totalSales = sales.reduce(
-          (sum, sale) => sum + (Number(sale.saleAmount) || 0),
-          0
-        );
+        const totalSales =
+          sales.reduce(
+            (sum, sale) => sum + (Number(sale.saleAmount) || 0),
+            0
+          ) || 0;
 
-        // Fetch recipe ingredients and ingredients to calculate total costs
         const recipeIngredients = await RecipeIngredient.findAll({
-          include: [{ model: Ingredient, as: "ingredient" }],
+          include: [{ model: Ingredient, as: "ingredient", required: true }],
         });
         const salesWithRecipes = await Sale.findAll({
-          include: [{ model: Recipe, as: "recipe" }],
+          include: [{ model: Recipe, as: "recipe", required: true }],
         });
 
-        // Calculate total costs based on ingredients used in sales
-        const totalCosts = salesWithRecipes.reduce((sum, sale) => {
-          const recipeId = sale.recipe?.id;
-          if (!recipeId) return sum;
-          const recipeIng = recipeIngredients.filter(
-            (ri) => ri.recipeId === recipeId
-          );
-          const cost = recipeIng.reduce((costSum, ri) => {
-            const quantity = Number(ri.quantity) || 0;
-            const unitPrice = Number(ri.ingredient?.unitPrice) || 0;
-            return costSum + quantity * unitPrice;
-          }, 0);
-          return sum + cost;
-        }, 0);
+        const totalCosts =
+          salesWithRecipes.reduce((sum, sale) => {
+            const recipeId = sale.recipe?.id;
+            if (!recipeId) return sum;
+            const recipeIng = recipeIngredients.filter(
+              (ri) => ri.recipeId === recipeId
+            );
+            const cost = recipeIng.reduce((costSum, ri) => {
+              const quantity = Number(ri.quantity) || 0;
+              const unitPrice = Number(ri.ingredient?.unitPrice) || 0;
+              return costSum + quantity * unitPrice;
+            }, 0);
+            return sum + cost;
+          }, 0) || 0;
 
-        // Calculate margin
-        const totalMargin = totalSales - totalCosts;
+        const totalMargin = totalSales - totalCosts || 0;
 
-        // Fetch low stock ingredients
         const ingredients = await Ingredient.findAll();
-        const lowStockIngredients = ingredients
-          .filter(
-            (ing) => Number(ing.stockQuantity) <= Number(ing.restockThreshold)
-          )
-          .map((ing) => ({
-            id: String(ing.id),
-            name: ing.name || "",
-            unitPrice: Number(ing.unitPrice) || 0,
-            unit: ing.unit || "",
-            stockQuantity: Number(ing.stockQuantity) || 0,
-            restockThreshold: Number(ing.restockThreshold) || 0,
-          }));
+        const lowStockIngredients =
+          ingredients
+            .filter(
+              (ing) => Number(ing.stockQuantity) <= Number(ing.restockThreshold)
+            )
+            .map((ing) => ({
+              id: String(ing.id),
+              name: ing.name || "",
+              unitPrice: Number(ing.unitPrice) || 0,
+              unit: ing.unit || "",
+              stockQuantity: Number(ing.stockQuantity) || 0,
+              restockThreshold: Number(ing.restockThreshold) || 0,
+            })) || [];
 
         return {
           totalSales,
@@ -61,23 +59,30 @@ const resolvers = {
         };
       } catch (error) {
         console.error("Error in dashboardStats:", error);
-        throw new ApolloError("Failed to fetch dashboard stats", "DB_ERROR");
+        return {
+          totalSales: 0,
+          totalCosts: 0,
+          totalMargin: 0,
+          lowStockIngredients: [],
+        };
       }
     },
     ingredients: async (_, __, { sequelize }) => {
       try {
         const ingredients = await Ingredient.findAll();
-        return ingredients.map((ing) => ({
-          id: String(ing.id),
-          name: ing.name || "",
-          unitPrice: Number(ing.unitPrice) || 0,
-          unit: ing.unit || "",
-          stockQuantity: Number(ing.stockQuantity) || 0,
-          restockThreshold: Number(ing.restockThreshold) || 0,
-        }));
+        return (
+          ingredients.map((ing) => ({
+            id: String(ing.id),
+            name: ing.name || "",
+            unitPrice: Number(ing.unitPrice) || 0,
+            unit: ing.unit || "",
+            stockQuantity: Number(ing.stockQuantity) || 0,
+            restockThreshold: Number(ing.restockThreshold) || 0,
+          })) || []
+        );
       } catch (error) {
         console.error("Error in ingredients:", error);
-        throw new ApolloError("Failed to fetch ingredients", "DB_ERROR");
+        return [];
       }
     },
     recipes: async (_, __, { sequelize }) => {
@@ -88,27 +93,85 @@ const resolvers = {
               model: RecipeIngredient,
               as: "ingredients",
               required: false,
-              include: [{ model: Ingredient, as: "ingredient" }],
+              include: [
+                { model: Ingredient, as: "ingredient", required: true },
+              ],
             },
           ],
         });
-        return recipes.map((recipe) => {
-          const ingredients = recipe.ingredients || [];
-          const totalCost = ingredients.reduce((sum, ri) => {
-            const quantity = Number(ri.quantity) || 0;
-            const unitPrice = Number(ri.ingredient?.unitPrice) || 0;
-            return sum + quantity * unitPrice;
-          }, 0);
-          return {
-            id: String(recipe.id),
-            name: recipe.name || "",
-            totalCost,
-            suggestedPrice: Number(recipe.suggestedPrice) || 0,
-            ingredients: ingredients.map((ri) => ({
-              id: String(ri.id),
-              quantity: Number(ri.quantity) || 0,
-              ingredient: ri.ingredient
-                ? {
+        return (
+          recipes.map((recipe) => {
+            const ingredients =
+              recipe.ingredients?.filter((ri) => ri.ingredient) || [];
+            const totalCost = ingredients.reduce((sum, ri) => {
+              const quantity = Number(ri.quantity) || 0;
+              const unitPrice = Number(ri.ingredient?.unitPrice) || 0;
+              return sum + quantity * unitPrice;
+            }, 0);
+            return {
+              id: String(recipe.id),
+              name: recipe.name || "",
+              totalCost: totalCost || 0,
+              suggestedPrice: Number(recipe.suggestedPrice) || 0,
+              ingredients: ingredients.map((ri) => ({
+                id: String(ri.id),
+                quantity: Number(ri.quantity) || 0,
+                ingredient: {
+                  id: String(ri.ingredient.id),
+                  name: ri.ingredient.name || "",
+                  unitPrice: Number(ri.ingredient.unitPrice) || 0,
+                  unit: ri.ingredient.unit || "",
+                  stockQuantity: Number(ri.ingredient.stockQuantity) || 0,
+                  restockThreshold: Number(ri.ingredient.restockThreshold) || 0,
+                },
+              })),
+            };
+          }) || []
+        );
+      } catch (error) {
+        console.error("Error in recipes:", error);
+        return [];
+      }
+    },
+    sales: async (_, __, { sequelize }) => {
+      try {
+        const sales = await Sale.findAll({
+          include: [
+            {
+              model: Recipe,
+              as: "recipe",
+              required: true,
+              include: [
+                {
+                  model: RecipeIngredient,
+                  as: "ingredients",
+                  required: false,
+                  include: [
+                    { model: Ingredient, as: "ingredient", required: true },
+                  ],
+                },
+              ],
+            },
+          ],
+        });
+        return (
+          sales.map((sale) => {
+            const recipeIngredients =
+              sale.recipe?.ingredients?.filter((ri) => ri.ingredient) || [];
+            return {
+              id: String(sale.id),
+              saleAmount: Number(sale.saleAmount) || 0,
+              createdAt:
+                sale.createdAt?.toISOString() || new Date().toISOString(),
+              recipe: {
+                id: String(sale.recipe.id),
+                name: sale.recipe.name || "",
+                totalCost: Number(sale.recipe.totalCost) || 0,
+                suggestedPrice: Number(sale.recipe.suggestedPrice) || 0,
+                ingredients: recipeIngredients.map((ri) => ({
+                  id: String(ri.id),
+                  quantity: Number(ri.quantity) || 0,
+                  ingredient: {
                     id: String(ri.ingredient.id),
                     name: ri.ingredient.name || "",
                     unitPrice: Number(ri.ingredient.unitPrice) || 0,
@@ -116,47 +179,15 @@ const resolvers = {
                     stockQuantity: Number(ri.ingredient.stockQuantity) || 0,
                     restockThreshold:
                       Number(ri.ingredient.restockThreshold) || 0,
-                  }
-                : null,
-            })),
-          };
-        });
-      } catch (error) {
-        console.error("Error in recipes:", error);
-        throw new ApolloError("Failed to fetch recipes", "DB_ERROR");
-      }
-    },
-    sales: async (_, __, { sequelize }) => {
-      try {
-        const sales = await Sale.findAll({
-          include: [{ model: Recipe, as: "recipe", required: true }],
-        });
-        return sales.map((sale) => {
-          if (!sale.recipe) {
-            throw new ApolloError(
-              `Sale ${sale.id} missing recipe`,
-              "DATA_ERROR"
-            );
-          }
-          return {
-            id: String(sale.id),
-            saleAmount: Number(sale.saleAmount) || 0,
-            createdAt:
-              sale.createdAt?.toISOString() || new Date().toISOString(),
-            recipe: {
-              id: String(sale.recipe.id),
-              name: sale.recipe.name || "",
-              totalCost: Number(sale.recipe.totalCost) || 0,
-              suggestedPrice: Number(sale.recipe.suggestedPrice) || 0,
-              ingredients: Array.isArray(sale.recipe.ingredients)
-                ? sale.recipe.ingredients
-                : [],
-            },
-          };
-        });
+                  },
+                })),
+              },
+            };
+          }) || []
+        );
       } catch (error) {
         console.error("Error in sales:", error);
-        throw new ApolloError("Failed to fetch sales", "DB_ERROR");
+        return [];
       }
     },
   },
@@ -226,7 +257,7 @@ const resolvers = {
 
         let totalCost = 0;
         const recipeIngredients = ingredientIds.map((id, i) => {
-          const ingredient = ingredients.find((ing) => ing.id === id);
+          const ingredient = ingredients.find((ing) => ing.id == id);
           const quantity = Number(quantities[i]);
           if (!Number.isFinite(quantity) || quantity <= 0) {
             throw new ApolloError(
@@ -322,7 +353,7 @@ const resolvers = {
         }
 
         const ingredients = recipe.ingredients || [];
-        await sequelize.transaction(async (t) => {
+        const sale = await sequelize.transaction(async (t) => {
           for (const ri of ingredients) {
             const ingredient = await Ingredient.findByPk(ri.ingredientId, {
               transaction: t,
@@ -359,7 +390,19 @@ const resolvers = {
         });
 
         const savedSale = await Sale.findByPk(sale.id, {
-          include: [{ model: Recipe, as: "recipe" }],
+          include: [
+            {
+              model: Recipe,
+              as: "recipe",
+              include: [
+                {
+                  model: RecipeIngredient,
+                  as: "ingredients",
+                  include: [{ model: Ingredient, as: "ingredient" }],
+                },
+              ],
+            },
+          ],
         });
 
         return {
@@ -371,9 +414,19 @@ const resolvers = {
             name: savedSale.recipe.name,
             totalCost: Number(savedSale.recipe.totalCost) || 0,
             suggestedPrice: Number(savedSale.recipe.suggestedPrice),
-            ingredients: Array.isArray(savedSale.recipe.ingredients)
-              ? savedSale.recipe.ingredients
-              : [],
+            ingredients:
+              savedSale.recipe.ingredients?.map((ri) => ({
+                id: String(ri.id),
+                quantity: Number(ri.quantity),
+                ingredient: {
+                  id: String(ri.ingredient.id),
+                  name: ri.ingredient.name,
+                  unitPrice: Number(ri.ingredient.unitPrice),
+                  unit: ri.ingredient.unit,
+                  stockQuantity: Number(ri.ingredient.stockQuantity),
+                  restockThreshold: Number(ri.ingredient.restockThreshold),
+                },
+              })) || [],
           },
         };
       } catch (error) {
