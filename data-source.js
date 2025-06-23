@@ -23,11 +23,12 @@ const sequelize = new Sequelize({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   dialectOptions: {
-    ssl: isProduction ? { require: true, rejectUnauthorized: false } : false,
+    ssl: {
+      require: true,
+      rejectUnauthorized: false, // Allow self-signed certificates
+    },
   },
-  logging: isProduction
-    ? (msg) => console.log(`Sequelize: ${msg}`)
-    : (msg) => console.log(`Sequelize: ${msg}`),
+  logging: (msg) => console.log(`Sequelize: ${msg}`),
 });
 
 // Define models
