@@ -63,6 +63,7 @@ functions:
         - "node_modules/sequelize/**"
         - "node_modules/pg/**"
         - "node_modules/pg-hstore/**"
+        - "node_modules/pg-connection-string/**"
         - "node_modules/uuid/**"
 
 plugins:
