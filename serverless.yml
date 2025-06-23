@@ -62,10 +62,6 @@ functions:
         - resolver.js
         - data-source.js
         - "!node_modules/**"
-        - "node_modules/sequelize/**"
-        - "node_modules/pg/**"
-        - "node_modules/pg-hstore/**"
-        - "node_modules/uuid/**"
 
 plugins:
   - serverless-appsync-plugin
