@@ -6,11 +6,12 @@ const resolvers = {
     dashboardStats: async (_, __, { sequelize }) => {
       try {
         const sales = await Sale.findAll();
-        const totalSales =
+        const totalSales = Number(
           sales.reduce(
             (sum, sale) => sum + (Number(sale.saleAmount) || 0),
             0
-          ) || 0;
+          ) || 0
+        );
 
         const recipeIngredients = await RecipeIngredient.findAll({
           include: [{ model: Ingredient, as: "ingredient", required: true }],
@@ -19,7 +20,7 @@ const resolvers = {
           include: [{ model: Recipe, as: "recipe", required: true }],
         });
 
-        const totalCosts =
+        const totalCosts = Number(
           salesWithRecipes.reduce((sum, sale) => {
             const recipeId = sale.recipe?.id;
             if (!recipeId) return sum;
@@ -32,9 +33,10 @@ const resolvers = {
               return costSum + quantity * unitPrice;
             }, 0);
             return sum + cost;
-          }, 0) || 0;
+          }, 0) || 0
+        );
 
-        const totalMargin = totalSales - totalCosts || 0;
+        const totalMargin = Number(totalSales - totalCosts || 0);
 
         const ingredients = await Ingredient.findAll();
         const lowStockIngredients =
@@ -51,7 +53,7 @@ const resolvers = {
               restockThreshold: Number(ing.restockThreshold) || 0,
             })) || [];
 
-        console.log("DashboardStats:", {
+        console.log("DashboardStats resolver result:", {
           totalSales,
           totalCosts,
           totalMargin,
@@ -85,7 +87,7 @@ const resolvers = {
             stockQuantity: Number(ing.stockQuantity) || 0,
             restockThreshold: Number(ing.restockThreshold) || 0,
           })) || [];
-        console.log("Ingredients:", result);
+        console.log("Ingredients resolver result:", result);
         return result;
       } catch (error) {
         console.error("Error in ingredients:", error);
@@ -134,7 +136,7 @@ const resolvers = {
               })),
             };
           }) || [];
-        console.log("Recipes:", result);
+        console.log("Recipes resolver result:", result);
         return result;
       } catch (error) {
         console.error("Error in recipes:", error);
@@ -192,7 +194,7 @@ const resolvers = {
               },
             };
           }) || [];
-        console.log("Sales:", result);
+        console.log("Sales resolver result:", result);
         return result;
       } catch (error) {
         console.error("Error in sales:", error);
@@ -446,10 +448,27 @@ const resolvers = {
     },
   },
   DashboardStats: {
-    totalSales: (parent) => Number(parent.totalSales) || 0,
-    totalCosts: (parent) => Number(parent.totalCosts) || 0,
-    totalMargin: (parent) => Number(parent.totalMargin) || 0,
-    lowStockIngredients: (parent) => parent.lowStockIngredients || [],
+    totalSales: (parent) => {
+      console.log("Resolving DashboardStats.totalSales, parent:", parent);
+      return Number(parent.totalSales) || 0;
+    },
+    totalCosts: (parent) => {
+      console.log("Resolving DashboardStats.totalCosts, parent:", parent);
+      return Number(parent.totalCosts) || 0;
+    },
+    totalMargin: (parent) => {
+      console.log("Resolving DashboardStats.totalMargin, parent:", parent);
+      return Number(parent.totalMargin) || 0;
+    },
+    lowStockIngredients: (parent) => {
+      console.log(
+        "Resolving DashboardStats.lowStockIngredients, parent:",
+        parent
+      );
+      return Array.isArray(parent.lowStockIngredients)
+        ? parent.lowStockIngredients
+        : [];
+    },
   },
   Ingredient: {
     id: (parent) => String(parent.id),

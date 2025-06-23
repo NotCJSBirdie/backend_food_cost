@@ -15,7 +15,6 @@ try {
   throw new Error("Failed to load resolvers module");
 }
 
-// Initialize Sequelize during cold start
 let isDbInitialized = false;
 async function initializeDatabase() {
   if (isDbInitialized) return true;
@@ -30,11 +29,10 @@ async function initializeDatabase() {
       message: err.message,
       stack: err.stack,
     });
-    throw err; // Throw to fail fast
+    throw err;
   }
 }
 
-// Catch uncaught exceptions
 process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception:", {
     message: err.message,
@@ -42,33 +40,39 @@ process.on("uncaughtException", (err) => {
   });
 });
 
-// AppSync-compatible Lambda handler
 exports.handler = async (event, context) => {
   console.log("Lambda invoked with event:", JSON.stringify(event, null, 2));
   console.log("Lambda context:", JSON.stringify(context, null, 2));
 
   try {
-    // Initialize database
     await initializeDatabase();
 
     const { fieldName, arguments: args, info } = event;
-    console.log("Processing AppSync event:", { fieldName, args });
+    console.log("Processing AppSync event:", {
+      fieldName,
+      parentTypeName: info?.parentTypeName,
+    });
 
     if (!resolvers[info?.parentTypeName]?.[fieldName]) {
       console.error("Resolver not found for:", {
         parentTypeName: info?.parentTypeName,
         fieldName,
       });
-      throw new Error(`Resolver ${fieldName} not found`);
+      throw new Error(`Resolver ${info.parentTypeName}.${fieldName} not found`);
     }
 
     const resolver = resolvers[info.parentTypeName][fieldName];
     console.log(`Executing resolver: ${info.parentTypeName}.${fieldName}`);
 
-    const result = await resolver(null, args, { sequelize });
-    console.log("Resolver result:", JSON.stringify(result, null, 2));
+    // For nested resolvers, pass the parent (event.source) instead of null
+    const parent = event.source || null;
+    const result = await resolver(parent, args, { sequelize });
+    console.log(
+      `Resolver ${info.parentTypeName}.${fieldName} result:`,
+      JSON.stringify(result, null, 2)
+    );
 
-    return result; // Return result directly for AppSync
+    return result;
   } catch (error) {
     console.error("Error in Lambda handler:", {
       message: error.message,
@@ -78,6 +82,6 @@ exports.handler = async (event, context) => {
       errorType: error.name || "Error",
       errorMessage: error.message,
       stackTrace: error.stack,
-    }; // AppSync error format
+    };
   }
 };
