@@ -1,16 +1,15 @@
 const { Ingredient, Recipe, RecipeIngredient, Sale } = require("./data-source");
 const { ApolloError } = require("apollo-server");
+const { v4: uuidv4 } = require("uuid");
 
 const resolvers = {
   Query: {
     dashboardStats: async (_, __, { sequelize }) => {
       try {
         const sales = await Sale.findAll();
-        const totalSales = Number(
-          sales.reduce(
-            (sum, sale) => sum + (Number(sale.saleAmount) || 0),
-            0
-          ) || 0
+        const totalSales = sales.reduce(
+          (sum, sale) => sum + (Number(sale.saleAmount) || 0),
+          0
         );
 
         const recipeIngredients = await RecipeIngredient.findAll({
@@ -20,51 +19,45 @@ const resolvers = {
           include: [{ model: Recipe, as: "recipe", required: true }],
         });
 
-        const totalCosts = Number(
-          salesWithRecipes.reduce((sum, sale) => {
-            const recipeId = sale.recipe?.id;
-            if (!recipeId) return sum;
-            const recipeIng = recipeIngredients.filter(
-              (ri) => ri.recipeId === recipeId
-            );
-            const cost = recipeIng.reduce((costSum, ri) => {
-              const quantity = Number(ri.quantity) || 0;
-              const unitPrice = Number(ri.ingredient?.unitPrice) || 0;
-              return costSum + quantity * unitPrice;
-            }, 0);
-            return sum + cost;
-          }, 0) || 0
-        );
+        const totalCosts = salesWithRecipes.reduce((sum, sale) => {
+          const recipeId = sale.recipe?.id;
+          if (!recipeId) return sum;
+          const recipeIng = recipeIngredients.filter(
+            (ri) => ri.recipeId === recipeId
+          );
+          const cost = recipeIng.reduce((costSum, ri) => {
+            const quantity = Number(ri.quantity) || 0;
+            const unitPrice = Number(ri.ingredient?.unitPrice) || 0;
+            return costSum + quantity * unitPrice;
+          }, 0);
+          return sum + cost;
+        }, 0);
 
-        const totalMargin = Number(totalSales - totalCosts || 0);
+        const totalMargin = totalSales - totalCosts;
 
         const ingredients = await Ingredient.findAll();
-        const lowStockIngredients =
-          ingredients
-            .filter(
-              (ing) => Number(ing.stockQuantity) <= Number(ing.restockThreshold)
-            )
-            .map((ing) => ({
-              id: String(ing.id),
-              name: ing.name || "",
-              unitPrice: Number(ing.unitPrice) || 0,
-              unit: ing.unit || "",
-              stockQuantity: Number(ing.stockQuantity) || 0,
-              restockThreshold: Number(ing.restockThreshold) || 0,
-            })) || [];
+        const lowStockIngredients = ingredients
+          .filter(
+            (ing) => Number(ing.stockQuantity) <= Number(ing.restockThreshold)
+          )
+          .map((ing) => ({
+            id: String(ing.id),
+            name: ing.name || "",
+            unitPrice: Number(ing.unitPrice) || 0,
+            unit: ing.unit || "",
+            stockQuantity: Number(ing.stockQuantity) || 0,
+            restockThreshold: Number(ing.restockThreshold) || 0,
+          }));
 
-        console.log("DashboardStats resolver result:", {
-          totalSales,
-          totalCosts,
-          totalMargin,
-          lowStockIngredients,
-        });
-        return {
-          totalSales,
-          totalCosts,
-          totalMargin,
-          lowStockIngredients,
+        const result = {
+          totalSales: Number(totalSales) || 0,
+          totalCosts: Number(totalCosts) || 0,
+          totalMargin: Number(totalMargin) || 0,
+          lowStockIngredients: lowStockIngredients || [],
         };
+
+        console.log("DashboardStats resolver result:", result);
+        return result;
       } catch (error) {
         console.error("Error in dashboardStats:", error);
         return {
@@ -78,15 +71,14 @@ const resolvers = {
     ingredients: async (_, __, { sequelize }) => {
       try {
         const ingredients = await Ingredient.findAll();
-        const result =
-          ingredients.map((ing) => ({
-            id: String(ing.id),
-            name: ing.name || "",
-            unitPrice: Number(ing.unitPrice) || 0,
-            unit: ing.unit || "",
-            stockQuantity: Number(ing.stockQuantity) || 0,
-            restockThreshold: Number(ing.restockThreshold) || 0,
-          })) || [];
+        const result = ingredients.map((ing) => ({
+          id: String(ing.id),
+          name: ing.name || "",
+          unitPrice: Number(ing.unitPrice) || 0,
+          unit: ing.unit || "",
+          stockQuantity: Number(ing.stockQuantity) || 0,
+          restockThreshold: Number(ing.restockThreshold) || 0,
+        }));
         console.log("Ingredients resolver result:", result);
         return result;
       } catch (error) {
@@ -108,34 +100,33 @@ const resolvers = {
             },
           ],
         });
-        const result =
-          recipes.map((recipe) => {
-            const ingredients =
-              recipe.ingredients?.filter((ri) => ri.ingredient) || [];
-            const totalCost = ingredients.reduce((sum, ri) => {
-              const quantity = Number(ri.quantity) || 0;
-              const unitPrice = Number(ri.ingredient?.unitPrice) || 0;
-              return sum + quantity * unitPrice;
-            }, 0);
-            return {
-              id: String(recipe.id),
-              name: recipe.name || "",
-              totalCost: totalCost || 0,
-              suggestedPrice: Number(recipe.suggestedPrice) || 0,
-              ingredients: ingredients.map((ri) => ({
-                id: String(ri.id),
-                quantity: Number(ri.quantity) || 0,
-                ingredient: {
-                  id: String(ri.ingredient.id),
-                  name: ri.ingredient.name || "",
-                  unitPrice: Number(ri.ingredient.unitPrice) || 0,
-                  unit: ri.ingredient.unit || "",
-                  stockQuantity: Number(ri.ingredient.stockQuantity) || 0,
-                  restockThreshold: Number(ri.ingredient.restockThreshold) || 0,
-                },
-              })),
-            };
-          }) || [];
+        const result = recipes.map((recipe) => {
+          const ingredients =
+            recipe.ingredients?.filter((ri) => ri.ingredient) || [];
+          const totalCost = ingredients.reduce((sum, ri) => {
+            const quantity = Number(ri.quantity) || 0;
+            const unitPrice = Number(ri.ingredient?.unitPrice) || 0;
+            return sum + quantity * unitPrice;
+          }, 0);
+          return {
+            id: String(recipe.id),
+            name: recipe.name || "",
+            totalCost: Number(totalCost) || 0,
+            suggestedPrice: Number(recipe.suggestedPrice) || 0,
+            ingredients: ingredients.map((ri) => ({
+              id: String(ri.id),
+              quantity: Number(ri.quantity) || 0,
+              ingredient: {
+                id: String(ri.ingredient.id),
+                name: ri.ingredient.name || "",
+                unitPrice: Number(ri.ingredient.unitPrice) || 0,
+                unit: ri.ingredient.unit || "",
+                stockQuantity: Number(ri.ingredient.stockQuantity) || 0,
+                restockThreshold: Number(ri.ingredient.restockThreshold) || 0,
+              },
+            })),
+          };
+        });
         console.log("Recipes resolver result:", result);
         return result;
       } catch (error) {
@@ -164,36 +155,34 @@ const resolvers = {
             },
           ],
         });
-        const result =
-          sales.map((sale) => {
-            const recipeIngredients =
-              sale.recipe?.ingredients?.filter((ri) => ri.ingredient) || [];
-            return {
-              id: String(sale.id),
-              saleAmount: Number(sale.saleAmount) || 0,
-              createdAt:
-                sale.createdAt?.toISOString() || new Date().toISOString(),
-              recipe: {
-                id: String(sale.recipe.id),
-                name: sale.recipe.name || "",
-                totalCost: Number(sale.recipe.totalCost) || 0,
-                suggestedPrice: Number(sale.recipe.suggestedPrice) || 0,
-                ingredients: recipeIngredients.map((ri) => ({
-                  id: String(ri.id),
-                  quantity: Number(ri.quantity) || 0,
-                  ingredient: {
-                    id: String(ri.ingredient.id),
-                    name: ri.ingredient.name || "",
-                    unitPrice: Number(ri.ingredient.unitPrice) || 0,
-                    unit: ri.ingredient.unit || "",
-                    stockQuantity: Number(ri.ingredient.stockQuantity) || 0,
-                    restockThreshold:
-                      Number(ri.ingredient.restockThreshold) || 0,
-                  },
-                })),
-              },
-            };
-          }) || [];
+        const result = sales.map((sale) => {
+          const recipeIngredients =
+            sale.recipe?.ingredients?.filter((ri) => ri.ingredient) || [];
+          return {
+            id: String(sale.id),
+            saleAmount: Number(sale.saleAmount) || 0,
+            createdAt:
+              sale.createdAt?.toISOString() || new Date().toISOString(),
+            recipe: {
+              id: String(sale.recipe.id),
+              name: sale.recipe.name || "",
+              totalCost: Number(sale.recipe.totalCost) || 0,
+              suggestedPrice: Number(sale.recipe.suggestedPrice) || 0,
+              ingredients: recipeIngredients.map((ri) => ({
+                id: String(ri.id),
+                quantity: Number(ri.quantity) || 0,
+                ingredient: {
+                  id: String(ri.ingredient.id),
+                  name: ri.ingredient.name || "",
+                  unitPrice: Number(ri.ingredient.unitPrice) || 0,
+                  unit: ri.ingredient.unit || "",
+                  stockQuantity: Number(ri.ingredient.stockQuantity) || 0,
+                  restockThreshold: Number(ri.ingredient.restockThreshold) || 0,
+                },
+              })),
+            },
+          };
+        });
         console.log("Sales resolver result:", result);
         return result;
       } catch (error) {
@@ -222,6 +211,7 @@ const resolvers = {
           throw new ApolloError("Invalid ingredient input", "INPUT_ERROR");
         }
         const ingredient = await Ingredient.create({
+          id: uuidv4(),
           name,
           unitPrice,
           unit,
@@ -290,6 +280,7 @@ const resolvers = {
         const recipe = await sequelize.transaction(async (t) => {
           const newRecipe = await Recipe.create(
             {
+              id: uuidv4(),
               name,
               totalCost,
               suggestedPrice,
@@ -317,7 +308,7 @@ const resolvers = {
         return {
           id: String(savedRecipe.id),
           name: savedRecipe.name,
-          totalCost,
+          totalCost: Number(totalCost),
           suggestedPrice: Number(savedRecipe.suggestedPrice),
           ingredients:
             savedRecipe.ingredients?.map((ri) => ({
@@ -446,55 +437,6 @@ const resolvers = {
         throw new ApolloError("Failed to record sale", "DB_ERROR");
       }
     },
-  },
-  DashboardStats: {
-    totalSales: (parent) => {
-      console.log("Resolving DashboardStats.totalSales, parent:", parent);
-      return Number(parent.totalSales) || 0;
-    },
-    totalCosts: (parent) => {
-      console.log("Resolving DashboardStats.totalCosts, parent:", parent);
-      return Number(parent.totalCosts) || 0;
-    },
-    totalMargin: (parent) => {
-      console.log("Resolving DashboardStats.totalMargin, parent:", parent);
-      return Number(parent.totalMargin) || 0;
-    },
-    lowStockIngredients: (parent) => {
-      console.log(
-        "Resolving DashboardStats.lowStockIngredients, parent:",
-        parent
-      );
-      return Array.isArray(parent.lowStockIngredients)
-        ? parent.lowStockIngredients
-        : [];
-    },
-  },
-  Ingredient: {
-    id: (parent) => String(parent.id),
-    name: (parent) => parent.name || "",
-    unitPrice: (parent) => Number(parent.unitPrice) || 0,
-    unit: (parent) => parent.unit || "",
-    stockQuantity: (parent) => Number(parent.stockQuantity) || 0,
-    restockThreshold: (parent) => Number(parent.restockThreshold) || 0,
-  },
-  Recipe: {
-    id: (parent) => String(parent.id),
-    name: (parent) => parent.name || "",
-    totalCost: (parent) => Number(parent.totalCost) || 0,
-    suggestedPrice: (parent) => Number(parent.suggestedPrice) || 0,
-    ingredients: (parent) => parent.ingredients || [],
-  },
-  RecipeIngredient: {
-    id: (parent) => String(parent.id),
-    quantity: (parent) => Number(parent.quantity) || 0,
-    ingredient: (parent) => parent.ingredient,
-  },
-  Sale: {
-    id: (parent) => String(parent.id),
-    saleAmount: (parent) => Number(parent.saleAmount) || 0,
-    createdAt: (parent) => parent.createdAt || new Date().toISOString(),
-    recipe: (parent) => parent.recipe,
   },
 };
 

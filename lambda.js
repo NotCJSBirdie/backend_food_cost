@@ -1,87 +1,65 @@
-const { sequelize } = require("./data-source");
+const resolvers = require("./resolvers");
+const { sequelize, testConnection, syncDatabase } = require("./data-source");
 
-let resolvers;
-try {
-  console.log("Loading resolvers...");
-  const resolverModule = require("./resolvers");
-  resolvers =
-    resolverModule.resolvers || resolverModule.default || resolverModule;
-  console.log("Resolvers loaded successfully");
-} catch (err) {
-  console.error("Error loading resolvers:", {
-    message: err.message,
-    stack: err.stack,
-  });
-  throw new Error("Failed to load resolvers module");
-}
+// Initialize database connection on cold start
+let isConnected = false;
 
-let isDbInitialized = false;
 async function initializeDatabase() {
-  if (isDbInitialized) return true;
-  try {
-    console.log("Authenticating database connection...");
-    await sequelize.authenticate();
-    console.log("Database connection established");
-    isDbInitialized = true;
-    return true;
-  } catch (err) {
-    console.error("Database initialization error:", {
-      message: err.message,
-      stack: err.stack,
-    });
-    throw err;
+  if (!isConnected) {
+    try {
+      await testConnection();
+      await syncDatabase();
+      isConnected = true;
+      console.log("Database initialized successfully");
+    } catch (error) {
+      console.error("Failed to initialize database:", error);
+      throw error;
+    }
   }
 }
 
-process.on("uncaughtException", (err) => {
-  console.error("Uncaught Exception:", {
-    message: err.message,
-    stack: err.stack,
-  });
-});
+exports.handler = async (event) => {
+  console.log("Lambda event:", JSON.stringify(event, null, 2));
 
-exports.handler = async (event, context) => {
-  console.log("Lambda invoked with event:", JSON.stringify(event, null, 2));
-  console.log("Lambda context:", JSON.stringify(context, null, 2));
+  // Initialize database
+  await initializeDatabase();
+
+  // Extract resolver details from the event
+  const {
+    fieldName,
+    parentTypeName,
+    arguments: args,
+    identity,
+    source: parent,
+  } = event;
+
+  // Context to pass to resolvers
+  const context = { sequelize };
 
   try {
-    await initializeDatabase();
+    // Map the resolver based on parentTypeName and fieldName
+    const resolver = resolvers[parentTypeName]?.[fieldName];
 
-    const { fieldName, arguments: args, info } = event;
-    console.log("Processing AppSync event:", {
-      fieldName,
-      parentTypeName: info?.parentTypeName,
-    });
-
-    if (!resolvers[info?.parentTypeName]?.[fieldName]) {
-      console.error("Resolver not found for:", {
-        parentTypeName: info?.parentTypeName,
-        fieldName,
-      });
-      throw new Error(`Resolver ${info.parentTypeName}.${fieldName} not found`);
+    if (!resolver) {
+      throw new Error(`Resolver not found for ${parentTypeName}.${fieldName}`);
     }
 
-    const resolver = resolvers[info.parentTypeName][fieldName];
-    console.log(`Executing resolver: ${info.parentTypeName}.${fieldName}`);
+    // Execute the resolver
+    const result = await resolver(parent, args, context, {
+      fieldName,
+      parentTypeName,
+    });
 
-    // For nested resolvers, pass the parent (event.source) instead of null
-    const parent = event.source || null;
-    const result = await resolver(parent, args, { sequelize });
-    console.log(
-      `Resolver ${info.parentTypeName}.${fieldName} result:`,
-      JSON.stringify(result, null, 2)
-    );
+    console.log(`Resolver result for ${parentTypeName}.${fieldName}:`, result);
 
+    // Return the result in AppSync-compatible format
     return result;
   } catch (error) {
-    console.error("Error in Lambda handler:", {
-      message: error.message,
-      stack: error.stack,
-    });
+    console.error(`Error in ${parentTypeName}.${fieldName}:`, error);
     return {
-      errorType: error.name || "Error",
-      errorMessage: error.message,
-      stackTrace: error.stack,
+      __typename: "Error",
+      message: error.message || "Internal server error",
+      type: error.name || "InternalError",
     };
   }
 };

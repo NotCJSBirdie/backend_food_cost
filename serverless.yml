@@ -28,6 +28,19 @@ provider:
     NODE_ENV: ${opt:stage, 'production'}
   tags:
     environment: ${sls:stage}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - rds:*
+          Resource: "*"
 
 functions:
   FoodCostLambda:
@@ -38,8 +51,14 @@ functions:
       - http:
           path: /{proxy+}
           method: ANY
-          cors: true
-          timeout: 30
+          cors:
+            origin: "*"
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+            allowCredentials: false
 
 plugins:
   - serverless-appsync-plugin
@@ -49,99 +68,12 @@ appSync:
   authentication:
     type: API_KEY
   schema: ./src/schema.graphql
+  useResolverFunctions: true
   dataSources:
     FoodCostLambdaDataSource:
       type: AWS_LAMBDA
       config:
         functionName: FoodCostLambda
-  resolvers:
-    Query.dashboardStats:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Query.ingredients:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Query.recipes:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Query.sales:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Mutation.addIngredient:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Mutation.createRecipe:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Mutation.recordSale:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    DashboardStats.totalSales:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    DashboardStats.totalCosts:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    DashboardStats.totalMargin:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    DashboardStats.lowStockIngredients:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Ingredient.id:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Ingredient.name:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Ingredient.unitPrice:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Ingredient.unit:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Ingredient.stockQuantity:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Ingredient.restockThreshold:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Recipe.id:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Recipe.name:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Recipe.totalCost:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Recipe.suggestedPrice:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Recipe.ingredients:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    RecipeIngredient.id:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    RecipeIngredient.quantity:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    RecipeIngredient.ingredient:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Sale.id:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Sale.saleAmount:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Sale.createdAt:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-    Sale.recipe:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
 
 package:
   individually: true
