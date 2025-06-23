@@ -554,16 +554,15 @@ const resolvers = {
           return false;
         }
 
-        // Check if ingredient is used in any recipes
-        const recipeIngredients = await RecipeIngredient.findAll({
-          where: { ingredientId: id },
+        // Force delete: Remove associated RecipeIngredient records
+        await context.sequelize.transaction(async (t) => {
+          await RecipeIngredient.destroy({
+            where: { ingredientId: id },
+            transaction: t,
+          });
+          await ingredient.destroy({ transaction: t });
         });
-        if (recipeIngredients.length > 0) {
-          console.error(`Ingredient ${id} is used in recipes`);
-          return false;
-        }
 
-        await ingredient.destroy();
         console.log(`Ingredient ${id} deleted successfully`);
         return true;
       } catch (error) {
@@ -586,16 +585,38 @@ const resolvers = {
           return false;
         }
 
-        // Check if recipe has associated sales
-        const sales = await Sale.findAll({
-          where: { recipeId: id },
-        });
-        if (sales.length > 0) {
-          console.error(`Recipe ${id} has associated sales`);
-          return false;
-        }
-
+        // Force delete: Remove associated sales and recipe ingredients
         await context.sequelize.transaction(async (t) => {
+          // Delete associated sales and restore stock
+          const sales = await Sale.findAll({
+            where: { recipeId: id },
+            include: [
+              {
+                model: Recipe,
+                as: "recipe",
+                include: [{ model: RecipeIngredient, as: "ingredients" }],
+              },
+            ],
+            transaction: t,
+          });
+
+          for (const sale of sales) {
+            const recipeIngredients = sale.recipe?.ingredients || [];
+            for (const ri of recipeIngredients) {
+              const ingredient = await Ingredient.findByPk(ri.ingredientId, {
+                transaction: t,
+              });
+              if (ingredient) {
+                const newStock = (ingredient.stockQuantity || 0) + ri.quantity;
+                await ingredient.update(
+                  { stockQuantity: newStock },
+                  { transaction: t }
+                );
+              }
+            }
+            await sale.destroy({ transaction: t });
+          }
+
           // Delete associated recipe ingredients
           await RecipeIngredient.destroy({
             where: { recipeId: id },
@@ -631,9 +652,13 @@ const resolvers = {
         const recipe = await Recipe.findByPk(sale.recipeId, {
           include: [{ model: RecipeIngredient, as: "ingredients" }],
         });
+        if (!recipe) {
+          console.error(`Recipe ${sale.recipeId} not found`);
+          return false;
+        }
 
         await context.sequelize.transaction(async (t) => {
-          for (const ri of recipe.ingredients) {
+          for (const ri of recipe.ingredients || []) {
             const ingredient = await Ingredient.findByPk(ri.ingredientId, {
               transaction: t,
             });
