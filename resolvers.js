@@ -1,5 +1,4 @@
 const { Ingredient, Recipe, RecipeIngredient, Sale } = require("./data-source");
-const { ApolloError } = require("apollo-server");
 const { v4: uuidv4 } = require("uuid");
 
 const resolvers = {
@@ -7,12 +6,7 @@ const resolvers = {
     dashboardStats: async (_, __, { sequelize }) => {
       if (!sequelize) {
         console.error("Sequelize instance missing in dashboardStats");
-        return {
-          totalSales: 0,
-          totalCosts: 0,
-          totalMargin: 0,
-          lowStockIngredients: [],
-        };
+        return null;
       }
       try {
         const sales = await Sale.findAll();
@@ -75,18 +69,13 @@ const resolvers = {
           message: error.message,
           stack: error.stack,
         });
-        return {
-          totalSales: 0,
-          totalCosts: 0,
-          totalMargin: 0,
-          lowStockIngredients: [],
-        };
+        return null;
       }
     },
     ingredients: async (_, __, { sequelize }) => {
       if (!sequelize) {
         console.error("Sequelize instance missing in ingredients");
-        return [];
+        return null;
       }
       try {
         const ingredients = await Ingredient.findAll();
@@ -108,13 +97,13 @@ const resolvers = {
           message: error.message,
           stack: error.stack,
         });
-        return [];
+        return null;
       }
     },
     recipes: async (_, __, { sequelize }) => {
       if (!sequelize) {
         console.error("Sequelize instance missing in recipes");
-        return [];
+        return null;
       }
       try {
         const recipes = await Recipe.findAll({
@@ -150,7 +139,7 @@ const resolvers = {
                 name: ri.ingredient.name || "",
                 unitPrice: Number(ri.ingredient.unitPrice) || 0,
                 unit: ri.ingredient.unit || "",
-                stockQuantity: Number(ingr.stockQuantity) || 0,
+                stockQuantity: Number(ri.ingredient.stockQuantity) || 0,
                 restockThreshold: Number(ri.ingredient.restockThreshold) || 0,
               },
             })),
@@ -166,13 +155,13 @@ const resolvers = {
           message: error.message,
           stack: error.stack,
         });
-        return [];
+        return null;
       }
     },
     sales: async (_, __, { sequelize }) => {
       if (!sequelize) {
         console.error("Sequelize instance missing in sales");
-        return [];
+        return null;
       }
       try {
         const sales = await Sale.findAll({
@@ -229,7 +218,7 @@ const resolvers = {
           message: error.message,
           stack: error.stack,
         });
-        return [];
+        return null;
       }
     },
   },
@@ -241,7 +230,7 @@ const resolvers = {
     ) => {
       if (!sequelize) {
         console.error("Sequelize instance missing in addIngredient");
-        throw new ApolloError("Database not available", "DB_ERROR");
+        return null;
       }
       try {
         if (
@@ -254,7 +243,14 @@ const resolvers = {
           !Number.isFinite(restockThreshold) ||
           restockThreshold < 0
         ) {
-          throw new ApolloError("Invalid ingredient input", "INPUT_ERROR");
+          console.error("Invalid ingredient input:", {
+            name,
+            unitPrice,
+            unit,
+            stockQuantity,
+            restockThreshold,
+          });
+          return null;
         }
         const ingredient = await Ingredient.create({
           id: uuidv4(),
@@ -279,7 +275,7 @@ const resolvers = {
           message: error.message,
           stack: error.stack,
         });
-        throw new ApolloError("Failed to create ingredient", "DB_ERROR");
+        return null;
       }
     },
     createRecipe: async (
@@ -289,7 +285,7 @@ const resolvers = {
     ) => {
       if (!sequelize) {
         console.error("Sequelize instance missing in createRecipe");
-        throw new ApolloError("Database not available", "DB_ERROR");
+        return null;
       }
       try {
         if (
@@ -298,17 +294,24 @@ const resolvers = {
           !Array.isArray(quantities) ||
           ingredientIds.length !== quantities.length
         ) {
-          throw new ApolloError("Invalid recipe input", "INPUT_ERROR");
+          console.error("Invalid recipe input:", {
+            name,
+            ingredientIds,
+            quantities,
+          });
+          return null;
         }
         if (Number.isFinite(targetMargin) && targetMargin >= 1) {
-          throw new ApolloError("Invalid target margin", "INPUT_ERROR");
+          console.error("Invalid target margin:", targetMargin);
+          return null;
         }
 
         const ingredients = await Ingredient.findAll({
           where: { id: ingredientIds },
         });
         if (ingredients.length !== ingredientIds.length) {
-          throw new ApolloError("Some ingredients not found", "DATA_ERROR");
+          console.error("Some ingredients not found:", ingredientIds);
+          return null;
         }
 
         let totalCost = 0;
@@ -316,10 +319,11 @@ const resolvers = {
           const ingredient = ingredients.find((ing) => ing.id == id);
           const quantity = Number(quantities[i]);
           if (!Number.isFinite(quantity) || quantity <= 0) {
-            throw new ApolloError(
-              `Invalid quantity for ingredient ${ingredient.name}`,
-              "INPUT_ERROR"
+            console.error(
+              `Invalid quantity for ingredient ${ingredient.name}:`,
+              quantity
             );
+            return null;
           }
           totalCost += ingredient.unitPrice * quantity;
           return {
@@ -327,6 +331,10 @@ const resolvers = {
             quantity,
           };
         });
+
+        if (recipeIngredients.includes(null)) {
+          return null;
+        }
 
         const suggestedPrice = Number.isFinite(targetMargin)
           ? totalCost / (1 - targetMargin)
@@ -386,7 +394,7 @@ const resolvers = {
           message: error.message,
           stack: error.stack,
         });
-        throw new ApolloError("Failed to create recipe", "DB_ERROR");
+        return null;
       }
     },
     recordSale: async (
@@ -396,27 +404,28 @@ const resolvers = {
     ) => {
       if (!sequelize) {
         console.error("Sequelize instance missing in recordSale");
-        throw new ApolloError("Database not available", "DB_ERROR");
+        return null;
       }
       try {
         if (!recipeId) {
-          throw new ApolloError("Recipe ID is required", "INPUT_ERROR");
+          console.error("Recipe ID is required");
+          return null;
         }
         if (!Number.isFinite(saleAmount) || saleAmount <= 0) {
-          throw new ApolloError("Sale amount must be positive", "INPUT_ERROR");
+          console.error("Invalid sale amount:", saleAmount);
+          return null;
         }
         if (!Number.isInteger(quantitySold) || quantitySold <= 0) {
-          throw new ApolloError(
-            "Quantity sold must be a positive integer",
-            "INPUT_ERROR"
-          );
+          console.error("Invalid quantity sold:", quantitySold);
+          return null;
         }
 
         const recipe = await Recipe.findByPk(recipeId, {
           include: [{ model: RecipeIngredient, as: "ingredients" }],
         });
         if (!recipe) {
-          throw new ApolloError(`Recipe ${recipeId} not found`, "DATA_ERROR");
+          console.error(`Recipe ${recipeId} not found`);
+          return null;
         }
 
         const ingredients = recipe.ingredients || [];
@@ -426,18 +435,14 @@ const resolvers = {
               transaction: t,
             });
             if (!ingredient) {
-              throw new ApolloError(
-                `Ingredient ${ri.ingredientId} not found`,
-                "DATA_ERROR"
-              );
+              console.error(`Ingredient ${ri.ingredientId} not found`);
+              return null;
             }
             const stockDeduction = ri.quantity * quantitySold;
             const newStock = ingredient.stockQuantity - stockDeduction;
             if (!Number.isFinite(newStock) || newStock < 0) {
-              throw new ApolloError(
-                `Insufficient stock for ${ingredient.name}`,
-                "DATA_ERROR"
-              );
+              console.error(`Insufficient stock for ${ingredient.name}`);
+              return null;
             }
             await ingredient.update(
               { stockQuantity: newStock },
@@ -455,6 +460,10 @@ const resolvers = {
           );
           return sale;
         });
+
+        if (!sale) {
+          return null;
+        }
 
         const savedSale = await Sale.findByPk(sale.id, {
           include: [
@@ -503,7 +512,7 @@ const resolvers = {
           message: error.message,
           stack: error.stack,
         });
-        throw new ApolloError("Failed to record sale", "DB_ERROR");
+        return null;
       }
     },
   },
