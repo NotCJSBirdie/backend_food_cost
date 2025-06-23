@@ -59,12 +59,10 @@ functions:
       patterns:
         - lambda.js
         - data-source.js
-        - "!node_modules/**"
-        - "node_modules/sequelize/**"
-        - "node_modules/pg/**"
-        - "node_modules/pg-hstore/**"
-        - "node_modules/pg-connection-string/**"
-        - "node_modules/uuid/**"
+        - "node_modules/**"
+        - src/schema.graphql
+        - vtl/**
+        - "!**"
 
 plugins:
   - serverless-appsync-plugin
