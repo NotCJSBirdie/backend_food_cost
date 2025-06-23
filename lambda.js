@@ -449,13 +449,13 @@ const resolvers = {
             });
             if (!ingredient) {
               console.error(`Ingredient ${ri.ingredientId} not found`);
-              return null;
+              throw new Error(`Ingredient ${ri.ingredientId} not found`);
             }
             const stockDeduction = ri.quantity * (quantitySold || 0);
             const newStock = (ingredient.stockQuantity || 0) - stockDeduction;
             if (newStock < 0) {
               console.error(`Insufficient stock for ${ingredient.name}`);
-              return null;
+              throw new Error(`Insufficient stock for ${ingredient.name}`);
             }
             await ingredient.update(
               { stockQuantity: newStock },
@@ -473,10 +473,6 @@ const resolvers = {
           );
           return sale;
         });
-
-        if (!sale) {
-          return null;
-        }
 
         const savedSale = await Sale.findByPk(sale.id, {
           include: [
@@ -548,18 +544,28 @@ const resolvers = {
         return false;
       }
       try {
+        console.log(`Attempting to delete ingredient ${id}`);
         const ingredient = await Ingredient.findByPk(id);
         if (!ingredient) {
           console.error(`Ingredient ${id} not found`);
           return false;
         }
 
-        // Force delete: Remove associated RecipeIngredient records
         await context.sequelize.transaction(async (t) => {
+          // Delete associated RecipeIngredient records
+          const recipeIngredients = await RecipeIngredient.findAll({
+            where: { ingredientId: id },
+            transaction: t,
+          });
+          console.log(
+            `Found ${recipeIngredients.length} recipe ingredients for ingredient ${id}`
+          );
           await RecipeIngredient.destroy({
             where: { ingredientId: id },
             transaction: t,
           });
+          // Delete the ingredient
+          console.log(`Deleting ingredient ${id}`);
           await ingredient.destroy({ transaction: t });
         });
 
@@ -569,6 +575,7 @@ const resolvers = {
         console.error("Error in deleteIngredient:", {
           message: error.message,
           stack: error.stack,
+          ingredientId: id,
         });
         return false;
       }
@@ -579,13 +586,13 @@ const resolvers = {
         return false;
       }
       try {
+        console.log(`Attempting to delete recipe ${id}`);
         const recipe = await Recipe.findByPk(id);
         if (!recipe) {
           console.error(`Recipe ${id} not found`);
           return false;
         }
 
-        // Force delete: Remove associated sales and recipe ingredients
         await context.sequelize.transaction(async (t) => {
           // Delete associated sales and restore stock
           const sales = await Sale.findAll({
@@ -599,30 +606,59 @@ const resolvers = {
             ],
             transaction: t,
           });
+          console.log(`Found ${sales.length} sales for recipe ${id}`);
 
           for (const sale of sales) {
             const recipeIngredients = sale.recipe?.ingredients || [];
+            console.log(
+              `Restoring stock for sale ${sale.id} with ${recipeIngredients.length} ingredients`
+            );
             for (const ri of recipeIngredients) {
+              if (!ri.ingredientId || ri.quantity == null) {
+                console.warn(
+                  `Invalid recipe ingredient data for sale ${sale.id}:`,
+                  ri
+                );
+                continue;
+              }
               const ingredient = await Ingredient.findByPk(ri.ingredientId, {
                 transaction: t,
               });
-              if (ingredient) {
-                const newStock = (ingredient.stockQuantity || 0) + ri.quantity;
-                await ingredient.update(
-                  { stockQuantity: newStock },
-                  { transaction: t }
+              if (!ingredient) {
+                console.warn(
+                  `Ingredient ${ri.ingredientId} not found for sale ${sale.id}`
                 );
+                continue;
               }
+              const newStock =
+                (ingredient.stockQuantity || 0) + (ri.quantity || 0);
+              console.log(
+                `Updating stock for ingredient ${ri.ingredientId}: ${ingredient.stockQuantity} + ${ri.quantity} = ${newStock}`
+              );
+              await ingredient.update(
+                { stockQuantity: newStock },
+                { transaction: t }
+              );
             }
+            console.log(`Deleting sale ${sale.id}`);
             await sale.destroy({ transaction: t });
           }
 
           // Delete associated recipe ingredients
+          const recipeIngredients = await RecipeIngredient.findAll({
+            where: { recipeId: id },
+            transaction: t,
+          });
+          console.log(
+            `Found ${recipeIngredients.length} recipe ingredients for recipe ${id}`
+          );
           await RecipeIngredient.destroy({
             where: { recipeId: id },
             transaction: t,
           });
-          // Delete recipe
+
+          // Delete the recipe
+          console.log(`Deleting recipe ${id}`);
           await recipe.destroy({ transaction: t });
         });
 
@@ -632,6 +668,7 @@ const resolvers = {
         console.error("Error in deleteRecipe:", {
           message: error.message,
           stack: error.stack,
+          recipeId: id,
         });
         return false;
       }
@@ -642,34 +679,59 @@ const resolvers = {
         return false;
       }
       try {
+        console.log(`Attempting to delete sale ${id}`);
         const sale = await Sale.findByPk(id);
         if (!sale) {
           console.error(`Sale ${id} not found`);
           return false;
         }
 
-        // Restore ingredient stock quantities
         const recipe = await Recipe.findByPk(sale.recipeId, {
           include: [{ model: RecipeIngredient, as: "ingredients" }],
         });
         if (!recipe) {
-          console.error(`Recipe ${sale.recipeId} not found`);
+          console.error(`Recipe ${sale.recipeId} not found for sale ${id}`);
           return false;
         }
 
         await context.sequelize.transaction(async (t) => {
-          for (const ri of recipe.ingredients || []) {
+          const ingredients = recipe.ingredients || [];
+          console.log(
+            `Restoring stock for sale ${id}, recipe ${sale.recipeId}, ingredients:`,
+            ingredients.map((ri) => ({
+              ingredientId: ri.ingredientId,
+              quantity: ri.quantity,
+            }))
+          );
+
+          for (const ri of ingredients) {
+            if (!ri.ingredientId || ri.quantity == null) {
+              console.warn(
+                `Invalid recipe ingredient data for sale ${id}:`,
+                ri
+              );
+              continue;
+            }
             const ingredient = await Ingredient.findByPk(ri.ingredientId, {
               transaction: t,
             });
-            if (ingredient) {
-              const newStock = (ingredient.stockQuantity || 0) + ri.quantity;
-              await ingredient.update(
-                { stockQuantity: newStock },
-                { transaction: t }
+            if (!ingredient) {
+              console.warn(
+                `Ingredient ${ri.ingredientId} not found for sale ${id}`
               );
+              continue;
             }
+            const newStock =
+              (ingredient.stockQuantity || 0) + (ri.quantity || 0);
+            console.log(
+              `Updating stock for ingredient ${ri.ingredientId}: ${ingredient.stockQuantity} + ${ri.quantity} = ${newStock}`
+            );
+            await ingredient.update(
+              { stockQuantity: newStock },
+              { transaction: t }
+            );
           }
+          console.log(`Deleting sale ${id}`);
           await sale.destroy({ transaction: t });
         });
 
@@ -679,6 +741,7 @@ const resolvers = {
         console.error("Error in deleteSale:", {
           message: error.message,
           stack: error.stack,
+          saleId: id,
         });
         return false;
       }
@@ -689,16 +752,13 @@ const resolvers = {
 exports.handler = async (event) => {
   console.log("Lambda event:", JSON.stringify(event, null, 2));
 
-  // Extract resolver details
   const parentTypeName = event.info?.parentTypeName || "Unknown";
   const fieldName = event.info?.fieldName || "unknown";
   const args = event.arguments || {};
   const parent = event.source || null;
 
-  // Log context
   console.log(`Processing ${parentTypeName}.${fieldName}`);
 
-  // Initialize database
   try {
     await initializeDatabase();
   } catch (error) {
@@ -706,11 +766,9 @@ exports.handler = async (event) => {
     return null;
   }
 
-  // Context for resolvers
   const context = { sequelize };
 
   try {
-    // Map the resolver
     const resolver = resolvers[parentTypeName]?.[fieldName];
 
     if (!resolver) {
@@ -718,7 +776,6 @@ exports.handler = async (event) => {
       return null;
     }
 
-    // Execute the resolver
     const result = await resolver(parent, args, context, {
       fieldName,
       parentTypeName,
