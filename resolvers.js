@@ -5,6 +5,15 @@ const { v4: uuidv4 } = require("uuid");
 const resolvers = {
   Query: {
     dashboardStats: async (_, __, { sequelize }) => {
+      if (!sequelize) {
+        console.error("Sequelize instance missing in dashboardStats");
+        return {
+          totalSales: 0,
+          totalCosts: 0,
+          totalMargin: 0,
+          lowStockIngredients: [],
+        };
+      }
       try {
         const sales = await Sale.findAll();
         const totalSales = sales.reduce(
@@ -56,10 +65,16 @@ const resolvers = {
           lowStockIngredients: lowStockIngredients || [],
         };
 
-        console.log("DashboardStats resolver result:", result);
+        console.log(
+          "DashboardStats resolver result:",
+          JSON.stringify(result, null, 2)
+        );
         return result;
       } catch (error) {
-        console.error("Error in dashboardStats:", error);
+        console.error("Error in dashboardStats:", {
+          message: error.message,
+          stack: error.stack,
+        });
         return {
           totalSales: 0,
           totalCosts: 0,
@@ -69,6 +84,10 @@ const resolvers = {
       }
     },
     ingredients: async (_, __, { sequelize }) => {
+      if (!sequelize) {
+        console.error("Sequelize instance missing in ingredients");
+        return [];
+      }
       try {
         const ingredients = await Ingredient.findAll();
         const result = ingredients.map((ing) => ({
@@ -79,14 +98,24 @@ const resolvers = {
           stockQuantity: Number(ing.stockQuantity) || 0,
           restockThreshold: Number(ing.restockThreshold) || 0,
         }));
-        console.log("Ingredients resolver result:", result);
+        console.log(
+          "Ingredients resolver result:",
+          JSON.stringify(result, null, 2)
+        );
         return result;
       } catch (error) {
-        console.error("Error in ingredients:", error);
+        console.error("Error in ingredients:", {
+          message: error.message,
+          stack: error.stack,
+        });
         return [];
       }
     },
     recipes: async (_, __, { sequelize }) => {
+      if (!sequelize) {
+        console.error("Sequelize instance missing in recipes");
+        return [];
+      }
       try {
         const recipes = await Recipe.findAll({
           include: [
@@ -121,20 +150,30 @@ const resolvers = {
                 name: ri.ingredient.name || "",
                 unitPrice: Number(ri.ingredient.unitPrice) || 0,
                 unit: ri.ingredient.unit || "",
-                stockQuantity: Number(ri.ingredient.stockQuantity) || 0,
+                stockQuantity: Number(ingr.stockQuantity) || 0,
                 restockThreshold: Number(ri.ingredient.restockThreshold) || 0,
               },
             })),
           };
         });
-        console.log("Recipes resolver result:", result);
+        console.log(
+          "Recipes resolver result:",
+          JSON.stringify(result, null, 2)
+        );
         return result;
       } catch (error) {
-        console.error("Error in recipes:", error);
+        console.error("Error in recipes:", {
+          message: error.message,
+          stack: error.stack,
+        });
         return [];
       }
     },
     sales: async (_, __, { sequelize }) => {
+      if (!sequelize) {
+        console.error("Sequelize instance missing in sales");
+        return [];
+      }
       try {
         const sales = await Sale.findAll({
           include: [
@@ -183,10 +222,13 @@ const resolvers = {
             },
           };
         });
-        console.log("Sales resolver result:", result);
+        console.log("Sales resolver result:", JSON.stringify(result, null, 2));
         return result;
       } catch (error) {
-        console.error("Error in sales:", error);
+        console.error("Error in sales:", {
+          message: error.message,
+          stack: error.stack,
+        });
         return [];
       }
     },
@@ -197,6 +239,10 @@ const resolvers = {
       { name, unitPrice, unit, stockQuantity, restockThreshold },
       { sequelize }
     ) => {
+      if (!sequelize) {
+        console.error("Sequelize instance missing in addIngredient");
+        throw new ApolloError("Database not available", "DB_ERROR");
+      }
       try {
         if (
           !name ||
@@ -218,7 +264,7 @@ const resolvers = {
           stockQuantity,
           restockThreshold,
         });
-        return {
+        const result = {
           id: String(ingredient.id),
           name: ingredient.name,
           unitPrice: Number(ingredient.unitPrice),
@@ -226,8 +272,13 @@ const resolvers = {
           stockQuantity: Number(ingredient.stockQuantity),
           restockThreshold: Number(ingredient.restockThreshold),
         };
+        console.log("addIngredient result:", JSON.stringify(result, null, 2));
+        return result;
       } catch (error) {
-        console.error("Error in addIngredient:", error);
+        console.error("Error in addIngredient:", {
+          message: error.message,
+          stack: error.stack,
+        });
         throw new ApolloError("Failed to create ingredient", "DB_ERROR");
       }
     },
@@ -236,6 +287,10 @@ const resolvers = {
       { name, ingredientIds, quantities, targetMargin },
       { sequelize }
     ) => {
+      if (!sequelize) {
+        console.error("Sequelize instance missing in createRecipe");
+        throw new ApolloError("Database not available", "DB_ERROR");
+      }
       try {
         if (
           !name ||
@@ -305,7 +360,7 @@ const resolvers = {
           ],
         });
 
-        return {
+        const result = {
           id: String(savedRecipe.id),
           name: savedRecipe.name,
           totalCost: Number(totalCost),
@@ -324,8 +379,13 @@ const resolvers = {
               },
             })) || [],
         };
+        console.log("createRecipe result:", JSON.stringify(result, null, 2));
+        return result;
       } catch (error) {
-        console.error("Error in createRecipe:", error);
+        console.error("Error in createRecipe:", {
+          message: error.message,
+          stack: error.stack,
+        });
         throw new ApolloError("Failed to create recipe", "DB_ERROR");
       }
     },
@@ -334,6 +394,10 @@ const resolvers = {
       { recipeId, saleAmount, quantitySold },
       { sequelize }
     ) => {
+      if (!sequelize) {
+        console.error("Sequelize instance missing in recordSale");
+        throw new ApolloError("Database not available", "DB_ERROR");
+      }
       try {
         if (!recipeId) {
           throw new ApolloError("Recipe ID is required", "INPUT_ERROR");
@@ -408,7 +472,7 @@ const resolvers = {
           ],
         });
 
-        return {
+        const result = {
           id: String(savedSale.id),
           saleAmount: Number(savedSale.saleAmount),
           createdAt: savedSale.createdAt.toISOString(),
@@ -432,8 +496,13 @@ const resolvers = {
               })) || [],
           },
         };
+        console.log("recordSale result:", JSON.stringify(result, null, 2));
+        return result;
       } catch (error) {
-        console.error("Error in recordSale:", error);
+        console.error("Error in recordSale:", {
+          message: error.message,
+          stack: error.stack,
+        });
         throw new ApolloError("Failed to record sale", "DB_ERROR");
       }
     },

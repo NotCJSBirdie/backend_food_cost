@@ -8,6 +8,7 @@ const missingEnvVars = requiredEnvVars.filter(
   (varName) => !process.env[varName]
 );
 if (missingEnvVars.length) {
+  console.error("Missing environment variables:", missingEnvVars);
   throw new Error(
     `Missing required environment variables: ${missingEnvVars.join(", ")}`
   );
@@ -24,7 +25,9 @@ const sequelize = new Sequelize({
   dialectOptions: {
     ssl: isProduction ? { require: true, rejectUnauthorized: false } : false,
   },
-  logging: isProduction ? false : (msg) => console.log(`Sequelize: ${msg}`),
+  logging: isProduction
+    ? (msg) => console.log(`Sequelize: ${msg}`)
+    : (msg) => console.log(`Sequelize: ${msg}`),
 });
 
 // Define models
@@ -32,7 +35,7 @@ const Ingredient = sequelize.define(
   "Ingredient",
   {
     id: {
-      type: DataTypes.STRING, // Match your database's string IDs
+      type: DataTypes.STRING,
       primaryKey: true,
     },
     name: {
@@ -63,14 +66,14 @@ const Ingredient = sequelize.define(
       validate: { min: 0 },
     },
   },
-  { tableName: "Ingredient", timestamps: false } // Disable timestamps
+  { tableName: "Ingredient", timestamps: false }
 );
 
 const Recipe = sequelize.define(
   "Recipe",
   {
     id: {
-      type: DataTypes.STRING, // Match string IDs
+      type: DataTypes.STRING,
       primaryKey: true,
     },
     name: {
@@ -91,7 +94,7 @@ const Recipe = sequelize.define(
       validate: { min: 0 },
     },
   },
-  { tableName: "Recipe", timestamps: false } // Disable timestamps
+  { tableName: "Recipe", timestamps: false }
 );
 
 const Sale = sequelize.define(
@@ -108,14 +111,14 @@ const Sale = sequelize.define(
       validate: { min: 0 },
     },
     recipeId: {
-      type: DataTypes.STRING, // Match string recipeId
+      type: DataTypes.STRING,
       allowNull: false,
       references: { model: Recipe, key: "id" },
       onDelete: "RESTRICT",
       onUpdate: "CASCADE",
     },
   },
-  { tableName: "Sale", timestamps: true } // Keep timestamps
+  { tableName: "Sale", timestamps: true }
 );
 
 const RecipeIngredient = sequelize.define(
@@ -132,21 +135,21 @@ const RecipeIngredient = sequelize.define(
       validate: { min: 0 },
     },
     recipeId: {
-      type: DataTypes.STRING, // Match string recipeId
+      type: DataTypes.STRING,
       allowNull: false,
       references: { model: Recipe, key: "id" },
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
     },
     ingredientId: {
-      type: DataTypes.STRING, // Match string ingredientId
+      type: DataTypes.STRING,
       allowNull: false,
       references: { model: Ingredient, key: "id" },
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
     },
   },
-  { tableName: "RecipeIngredient", timestamps: false } // Disable timestamps
+  { tableName: "RecipeIngredient", timestamps: false }
 );
 
 // Define relationships
@@ -172,6 +175,11 @@ async function testConnection() {
     console.error("Database connection error:", {
       message: error.message,
       stack: error.stack,
+      env: {
+        DB_HOST: process.env.DB_HOST,
+        DB_NAME: process.env.DB_NAME,
+        DB_USER: process.env.DB_USER,
+      },
     });
     throw error;
   }
@@ -180,7 +188,7 @@ async function testConnection() {
 // Sync database
 async function syncDatabase() {
   try {
-    await sequelize.sync({ force: false }); // Don't drop tables
+    await sequelize.sync({ force: false });
     console.log("Database synced successfully");
   } catch (error) {
     console.error("Database sync error:", {
