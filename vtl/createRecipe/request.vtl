@@ -6,6 +6,11 @@
       "parentTypeName": "Mutation",
       "fieldName": "createRecipe"
     },
-    "arguments": $util.toJson($ctx.args)
+    "arguments": {
+      #if($ctx.args.name) "name": $util.toJson($ctx.args.name), #end
+      #if($ctx.args.ingredientIds) "ingredientIds": $util.toJson($ctx.args.ingredientIds), #end
+      #if($ctx.args.quantities) "quantities": $util.toJson($ctx.args.quantities), #end
+      #if($ctx.args.targetMargin) "targetMargin": $util.toJson($ctx.args.targetMargin) #end
+    }
   }
 }

@@ -75,18 +75,20 @@ const resolvers = {
             (ing) => Number(ing.stockQuantity) <= Number(ing.restockThreshold)
           )
           .map((ing) => ({
-            id: String(ing.id),
-            name: ing.name || "",
-            unitPrice: Number(ing.unitPrice) || 0,
-            unit: ing.unit || "",
-            stockQuantity: Number(ing.stockQuantity) || 0,
-            restockThreshold: Number(ing.restockThreshold) || 0,
+            id: ing.id ? String(ing.id) : null,
+            name: ing.name || null,
+            unitPrice: ing.unitPrice ? Number(ing.unitPrice) : null,
+            unit: ing.unit || null,
+            stockQuantity: ing.stockQuantity ? Number(ing.stockQuantity) : null,
+            restockThreshold: ing.restockThreshold
+              ? Number(ing.restockThreshold)
+              : null,
           }));
 
         const result = {
-          totalSales: Number(totalSales) || 0,
-          totalCosts: Number(totalCosts) || 0,
-          totalMargin: Number(totalMargin) || 0,
+          totalSales: totalSales ? Number(totalSales) : null,
+          totalCosts: totalCosts ? Number(totalCosts) : null,
+          totalMargin: totalMargin ? Number(totalMargin) : null,
           lowStockIngredients: lowStockIngredients || [],
         };
 
@@ -111,12 +113,14 @@ const resolvers = {
       try {
         const ingredients = await Ingredient.findAll();
         const result = ingredients.map((ing) => ({
-          id: String(ing.id),
-          name: ing.name || "",
-          unitPrice: Number(ing.unitPrice) || 0,
-          unit: ing.unit || "",
-          stockQuantity: Number(ing.stockQuantity) || 0,
-          restockThreshold: Number(ing.restockThreshold) || 0,
+          id: ing.id ? String(ing.id) : null,
+          name: ing.name || null,
+          unitPrice: ing.unitPrice ? Number(ing.unitPrice) : null,
+          unit: ing.unit || null,
+          stockQuantity: ing.stockQuantity ? Number(ing.stockQuantity) : null,
+          restockThreshold: ing.restockThreshold
+            ? Number(ing.restockThreshold)
+            : null,
         }));
         console.log(
           "Ingredients resolver result:",
@@ -158,20 +162,28 @@ const resolvers = {
             return sum + quantity * unitPrice;
           }, 0);
           return {
-            id: String(recipe.id),
-            name: recipe.name || "",
-            totalCost: Number(totalCost) || 0,
-            suggestedPrice: Number(recipe.suggestedPrice) || 0,
+            id: recipe.id ? String(recipe.id) : null,
+            name: recipe.name || null,
+            totalCost: totalCost ? Number(totalCost) : null,
+            suggestedPrice: recipe.suggestedPrice
+              ? Number(recipe.suggestedPrice)
+              : null,
             ingredients: ingredients.map((ri) => ({
-              id: String(ri.id),
-              quantity: Number(ri.quantity) || 0,
+              id: ri.id ? String(ri.id) : null,
+              quantity: ri.quantity ? Number(ri.quantity) : null,
               ingredient: {
-                id: String(ri.ingredient.id),
-                name: ri.ingredient.name || "",
-                unitPrice: Number(ri.ingredient.unitPrice) || 0,
-                unit: ri.ingredient.unit || "",
-                stockQuantity: Number(ri.ingredient.stockQuantity) || 0,
-                restockThreshold: Number(ri.ingredient.restockThreshold) || 0,
+                id: ri.ingredient.id ? String(ri.ingredient.id) : null,
+                name: ri.ingredient.name || null,
+                unitPrice: ri.ingredient.unitPrice
+                  ? Number(ri.ingredient.unitPrice)
+                  : null,
+                unit: ri.ingredient.unit || null,
+                stockQuantity: ri.ingredient.stockQuantity
+                  ? Number(ri.ingredient.stockQuantity)
+                  : null,
+                restockThreshold: ri.ingredient.restockThreshold
+                  ? Number(ri.ingredient.restockThreshold)
+                  : null,
               },
             })),
           };
@@ -218,25 +230,34 @@ const resolvers = {
           const recipeIngredients =
             sale.recipe?.ingredients?.filter((ri) => ri.ingredient) || [];
           return {
-            id: String(sale.id),
-            saleAmount: Number(sale.saleAmount) || 0,
-            createdAt:
-              sale.createdAt?.toISOString() || new Date().toISOString(),
+            id: sale.id ? String(sale.id) : null,
+            saleAmount: sale.saleAmount ? Number(sale.saleAmount) : null,
+            createdAt: sale.createdAt ? sale.createdAt.toISOString() : null,
             recipe: {
-              id: String(sale.recipe.id),
-              name: sale.recipe.name || "",
-              totalCost: Number(sale.recipe.totalCost) || 0,
-              suggestedPrice: Number(sale.recipe.suggestedPrice) || 0,
+              id: sale.recipe.id ? String(sale.recipe.id) : null,
+              name: sale.recipe.name || null,
+              totalCost: sale.recipe.totalCost
+                ? Number(sale.recipe.totalCost)
+                : null,
+              suggestedPrice: sale.recipe.suggestedPrice
+                ? Number(sale.recipe.suggestedPrice)
+                : null,
               ingredients: recipeIngredients.map((ri) => ({
-                id: String(ri.id),
-                quantity: Number(ri.quantity) || 0,
+                id: ri.id ? String(ri.id) : null,
+                quantity: ri.quantity ? Number(ri.quantity) : null,
                 ingredient: {
-                  id: String(ri.ingredient.id),
-                  name: ri.ingredient.name || "",
-                  unitPrice: Number(ri.ingredient.unitPrice) || 0,
-                  unit: ri.ingredient.unit || "",
-                  stockQuantity: Number(ri.ingredient.stockQuantity) || 0,
-                  restockThreshold: Number(ri.ingredient.restockThreshold) || 0,
+                  id: ri.ingredient.id ? String(ri.ingredient.id) : null,
+                  name: ri.ingredient.name || null,
+                  unitPrice: ri.ingredient.unitPrice
+                    ? Number(ri.ingredient.unitPrice)
+                    : null,
+                  unit: ri.ingredient.unit || null,
+                  stockQuantity: ri.ingredient.stockQuantity
+                    ? Number(ri.ingredient.stockQuantity)
+                    : null,
+                  restockThreshold: ri.ingredient.restockThreshold
+                    ? Number(ri.ingredient.restockThreshold)
+                    : null,
                 },
               })),
             },
@@ -264,40 +285,25 @@ const resolvers = {
         return null;
       }
       try {
-        if (
-          !name ||
-          !Number.isFinite(unitPrice) ||
-          unitPrice <= 0 ||
-          !unit ||
-          !Number.isFinite(stockQuantity) ||
-          stockQuantity < 0 ||
-          !Number.isFinite(restockThreshold) ||
-          restockThreshold < 0
-        ) {
-          console.error("Invalid ingredient input:", {
-            name,
-            unitPrice,
-            unit,
-            stockQuantity,
-            restockThreshold,
-          });
-          return null;
-        }
         const ingredient = await Ingredient.create({
           id: uuidv4(),
-          name,
-          unitPrice,
-          unit,
-          stockQuantity,
-          restockThreshold,
+          name: name || null,
+          unitPrice: unitPrice ? Number(unitPrice) : null,
+          unit: unit || null,
+          stockQuantity: stockQuantity ? Number(stockQuantity) : null,
+          restockThreshold: restockThreshold ? Number(restockThreshold) : null,
         });
         const result = {
-          id: String(ingredient.id),
-          name: ingredient.name,
-          unitPrice: Number(ingredient.unitPrice),
-          unit: ingredient.unit,
-          stockQuantity: Number(ingredient.stockQuantity),
-          restockThreshold: Number(ingredient.restockThreshold),
+          id: ingredient.id ? String(ingredient.id) : null,
+          name: ingredient.name || null,
+          unitPrice: ingredient.unitPrice ? Number(ingredient.unitPrice) : null,
+          unit: ingredient.unit || null,
+          stockQuantity: ingredient.stockQuantity
+            ? Number(ingredient.stockQuantity)
+            : null,
+          restockThreshold: ingredient.restockThreshold
+            ? Number(ingredient.restockThreshold)
+            : null,
         };
         console.log("addIngredient result:", JSON.stringify(result, null, 2));
         return result;
@@ -320,20 +326,11 @@ const resolvers = {
       }
       try {
         if (
-          !name ||
-          !Array.isArray(ingredientIds) ||
-          !Array.isArray(quantities) ||
+          !ingredientIds ||
+          !quantities ||
           ingredientIds.length !== quantities.length
         ) {
-          console.error("Invalid recipe input:", {
-            name,
-            ingredientIds,
-            quantities,
-          });
-          return null;
-        }
-        if (Number.isFinite(targetMargin) && targetMargin >= 1) {
-          console.error("Invalid target margin:", targetMargin);
+          console.error("Invalid recipe input:", { ingredientIds, quantities });
           return null;
         }
 
@@ -348,26 +345,15 @@ const resolvers = {
         let totalCost = 0;
         const recipeIngredients = ingredientIds.map((id, i) => {
           const ingredient = ingredients.find((ing) => ing.id == id);
-          const quantity = Number(quantities[i]);
-          if (!Number.isFinite(quantity) || quantity <= 0) {
-            console.error(
-              `Invalid quantity for ingredient ${ingredient.name}:`,
-              quantity
-            );
-            return null;
-          }
-          totalCost += ingredient.unitPrice * quantity;
+          const quantity = quantities[i] ? Number(quantities[i]) : 0;
+          totalCost += (ingredient.unitPrice || 0) * quantity;
           return {
             ingredientId: id,
             quantity,
           };
         });
 
-        if (recipeIngredients.includes(null)) {
-          return null;
-        }
-
-        const suggestedPrice = Number.isFinite(targetMargin)
+        const suggestedPrice = targetMargin
           ? totalCost / (1 - targetMargin)
           : totalCost * 1.3;
 
@@ -375,9 +361,9 @@ const resolvers = {
           const newRecipe = await Recipe.create(
             {
               id: uuidv4(),
-              name,
-              totalCost,
-              suggestedPrice,
+              name: name || null,
+              totalCost: totalCost || null,
+              suggestedPrice: suggestedPrice || null,
             },
             { transaction: t }
           );
@@ -400,21 +386,29 @@ const resolvers = {
         });
 
         const result = {
-          id: String(savedRecipe.id),
-          name: savedRecipe.name,
-          totalCost: Number(totalCost),
-          suggestedPrice: Number(savedRecipe.suggestedPrice),
+          id: savedRecipe.id ? String(savedRecipe.id) : null,
+          name: savedRecipe.name || null,
+          totalCost: totalCost ? Number(totalCost) : null,
+          suggestedPrice: savedRecipe.suggestedPrice
+            ? Number(savedRecipe.suggestedPrice)
+            : null,
           ingredients:
             savedRecipe.ingredients?.map((ri) => ({
-              id: String(ri.id),
-              quantity: Number(ri.quantity),
+              id: ri.id ? String(ri.id) : null,
+              quantity: ri.quantity ? Number(ri.quantity) : null,
               ingredient: {
-                id: String(ri.ingredient.id),
-                name: ri.ingredient.name,
-                unitPrice: Number(ri.ingredient.unitPrice),
-                unit: ri.ingredient.unit,
-                stockQuantity: Number(ri.ingredient.stockQuantity),
-                restockThreshold: Number(ri.ingredient.restockThreshold),
+                id: ri.ingredient.id ? String(ri.ingredient.id) : null,
+                name: ri.ingredient.name || null,
+                unitPrice: ri.ingredient.unitPrice
+                  ? Number(ri.ingredient.unitPrice)
+                  : null,
+                unit: ri.ingredient.unit || null,
+                stockQuantity: ri.ingredient.stockQuantity
+                  ? Number(ri.ingredient.stockQuantity)
+                  : null,
+                restockThreshold: ri.ingredient.restockThreshold
+                  ? Number(ri.ingredient.restockThreshold)
+                  : null,
               },
             })) || [],
         };
@@ -438,14 +432,6 @@ const resolvers = {
           console.error("Recipe ID is required");
           return null;
         }
-        if (!Number.isFinite(saleAmount) || saleAmount <= 0) {
-          console.error("Invalid sale amount:", saleAmount);
-          return null;
-        }
-        if (!Number.isInteger(quantitySold) || quantitySold <= 0) {
-          console.error("Invalid quantity sold:", quantitySold);
-          return null;
-        }
 
         const recipe = await Recipe.findByPk(recipeId, {
           include: [{ model: RecipeIngredient, as: "ingredients" }],
@@ -465,9 +451,9 @@ const resolvers = {
               console.error(`Ingredient ${ri.ingredientId} not found`);
               return null;
             }
-            const stockDeduction = ri.quantity * quantitySold;
-            const newStock = ingredient.stockQuantity - stockDeduction;
-            if (!Number.isFinite(newStock) || newStock < 0) {
+            const stockDeduction = ri.quantity * (quantitySold || 0);
+            const newStock = (ingredient.stockQuantity || 0) - stockDeduction;
+            if (newStock < 0) {
               console.error(`Insufficient stock for ${ingredient.name}`);
               return null;
             }
@@ -479,7 +465,7 @@ const resolvers = {
 
           const sale = await Sale.create(
             {
-              saleAmount,
+              saleAmount: saleAmount || null,
               recipeId,
               createdAt: new Date(),
             },
@@ -509,25 +495,39 @@ const resolvers = {
         });
 
         const result = {
-          id: String(savedSale.id),
-          saleAmount: Number(savedSale.saleAmount),
-          createdAt: savedSale.createdAt.toISOString(),
+          id: savedSale.id ? String(savedSale.id) : null,
+          saleAmount: savedSale.saleAmount
+            ? Number(savedSale.saleAmount)
+            : null,
+          createdAt: savedSale.createdAt
+            ? savedSale.createdAt.toISOString()
+            : null,
           recipe: {
-            id: String(savedSale.recipe.id),
-            name: savedSale.recipe.name,
-            totalCost: Number(savedSale.recipe.totalCost) || 0,
-            suggestedPrice: Number(savedSale.recipe.suggestedPrice),
+            id: savedSale.recipe.id ? String(savedSale.recipe.id) : null,
+            name: savedSale.recipe.name || null,
+            totalCost: savedSale.recipe.totalCost
+              ? Number(savedSale.recipe.totalCost)
+              : null,
+            suggestedPrice: savedSale.recipe.suggestedPrice
+              ? Number(savedSale.recipe.suggestedPrice)
+              : null,
             ingredients:
               savedSale.recipe.ingredients?.map((ri) => ({
-                id: String(ri.id),
-                quantity: Number(ri.quantity),
+                id: ri.id ? String(ri.id) : null,
+                quantity: ri.quantity ? Number(ri.quantity) : null,
                 ingredient: {
-                  id: String(ri.ingredient.id),
-                  name: ri.ingredient.name,
-                  unitPrice: Number(ri.ingredient.unitPrice),
-                  unit: ri.ingredient.unit,
-                  stockQuantity: Number(ri.ingredient.stockQuantity),
-                  restockThreshold: Number(ri.ingredient.restockThreshold),
+                  id: ri.ingredient.id ? String(ri.ingredient.id) : null,
+                  name: ri.ingredient.name || null,
+                  unitPrice: ri.ingredient.unitPrice
+                    ? Number(ri.ingredient.unitPrice)
+                    : null,
+                  unit: ri.ingredient.unit || null,
+                  stockQuantity: ri.ingredient.stockQuantity
+                    ? Number(ri.ingredient.stockQuantity)
+                    : null,
+                  restockThreshold: ri.ingredient.restockThreshold
+                    ? Number(ri.ingredient.restockThreshold)
+                    : null,
                 },
               })) || [],
           },

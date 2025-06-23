@@ -6,6 +6,10 @@
       "parentTypeName": "Mutation",
       "fieldName": "recordSale"
     },
-    "arguments": $util.toJson($ctx.args)
+    "arguments": {
+      #if($ctx.args.recipeId) "recipeId": $util.toJson($ctx.args.recipeId), #end
+      #if($ctx.args.saleAmount) "saleAmount": $util.toJson($ctx.args.saleAmount), #end
+      #if($ctx.args.quantitySold) "quantitySold": $util.toJson($ctx.args.quantitySold) #end
+    }
   }
 }
