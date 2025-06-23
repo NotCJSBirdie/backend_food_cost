@@ -53,15 +53,17 @@ functions:
   FoodCostLambda:
     handler: lambda.handler
     memorySize: 512
-    timeout: 29 # Set to 29 to match API Gateway
+    timeout: 29
     package:
       individually: true
       patterns:
         - lambda.js
-        - resolvers.js
-        - resolver.js
         - data-source.js
         - "!node_modules/**"
+        - "node_modules/sequelize/**"
+        - "node_modules/pg/**"
+        - "node_modules/pg-hstore/**"
+        - "node_modules/uuid/**"
 
 plugins:
   - serverless-appsync-plugin
@@ -80,34 +82,42 @@ appSync:
     Query.dashboardStats:
       kind: UNIT
       dataSource: FoodCostLambdaDataSource
-      code: resolver.js
+      request: vtl/dashboardStats/request.vtl
+      response: vtl/dashboardStats/response.vtl
     Query.ingredients:
       kind: UNIT
       dataSource: FoodCostLambdaDataSource
-      code: resolver.js
+      request: vtl/ingredients/request.vtl
+      response: vtl/ingredients/response.vtl
     Query.recipes:
       kind: UNIT
       dataSource: FoodCostLambdaDataSource
-      code: resolver.js
+      request: vtl/recipes/request.vtl
+      response: vtl/recipes/response.vtl
     Query.sales:
       kind: UNIT
       dataSource: FoodCostLambdaDataSource
-      code: resolver.js
+      request: vtl/sales/request.vtl
+      response: vtl/sales/response.vtl
     Mutation.addIngredient:
       kind: UNIT
       dataSource: FoodCostLambdaDataSource
-      code: resolver.js
+      request: vtl/addIngredient/request.vtl
+      response: vtl/addIngredient/response.vtl
     Mutation.createRecipe:
       kind: UNIT
       dataSource: FoodCostLambdaDataSource
-      code: resolver.js
+      request: vtl/createRecipe/request.vtl
+      response: vtl/createRecipe/response.vtl
     Mutation.recordSale:
       kind: UNIT
       dataSource: FoodCostLambdaDataSource
-      code: resolver.js
+      request: vtl/recordSale/request.vtl
+      response: vtl/recordSale/response.vtl
 
 package:
   individually: true
   patterns:
     - src/schema.graphql
-    - "!**" # Exclude all other files not explicitly included
+    - vtl/**
+    - "!**"
