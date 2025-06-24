@@ -593,9 +593,7 @@ const resolvers = {
     deleteIngredient: async (_, { id }, context) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in deleteIngredient");
-        throw new GraphQLError("Sequelize instance missing", {
-          extensions: { code: "INTERNAL_SERVER_ERROR" },
-        });
+        return { success: false, error: "Sequelize instance missing" };
       }
       try {
         console.log(`Attempting to delete ingredient ${id}`);
@@ -629,17 +627,16 @@ const resolvers = {
           stack: error.stack,
           ingredientId: id,
         });
-        throw new GraphQLError("Failed to delete ingredient", {
-          extensions: { code: "DATABASE_ERROR", originalError: error.message },
-        });
+        return {
+          success: false,
+          error: error.message || "Failed to delete ingredient",
+        };
       }
     },
     deleteRecipe: async (_, { id }, context) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in deleteRecipe");
-        throw new GraphQLError("Sequelize instance missing", {
-          extensions: { code: "INTERNAL_SERVER_ERROR" },
-        });
+        return { success: false, error: "Sequelize instance missing" };
       }
       try {
         console.log(`Attempting to delete recipe ${id}`);
@@ -723,17 +720,16 @@ const resolvers = {
           stack: error.stack,
           recipeId: id,
         });
-        throw new GraphQLError("Failed to delete recipe", {
-          extensions: { code: "DATABASE_ERROR", originalError: error.message },
-        });
+        return {
+          success: false,
+          error: error.message || "Failed to delete recipe",
+        };
       }
     },
     deleteSale: async (_, { id }, context) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in deleteSale");
-        throw new GraphQLError("Sequelize instance missing", {
-          extensions: { code: "INTERNAL_SERVER_ERROR" },
-        });
+        return { success: false, error: "Sequelize instance missing" };
       }
       try {
         console.log(`Attempting to delete sale ${id}`);
@@ -800,9 +796,10 @@ const resolvers = {
           stack: error.stack,
           saleId: id,
         });
-        throw new GraphQLError("Failed to delete sale", {
-          extensions: { code: "DATABASE_ERROR", originalError: error.message },
-        });
+        return {
+          success: false,
+          error: error.message || "Failed to delete sale",
+        };
       }
     },
   },
@@ -811,9 +808,11 @@ const resolvers = {
 exports.handler = async (event) => {
   console.log("Lambda event:", JSON.stringify(event, null, 2));
 
-  const parentTypeName = event.info?.parentTypeName || "Unknown";
-  const fieldName = event.info?.fieldName || "unknown";
-  const args = event.arguments || {};
+  // Extract from event.payload instead of event.info
+  const payload = event.payload || {};
+  const parentTypeName = payload.parentTypeName || "Unknown";
+  const fieldName = payload.fieldName || "unknown";
+  const args = payload.arguments || {};
   const parent = event.source || null;
 
   console.log(`Processing ${parentTypeName}.${fieldName}`);
@@ -857,7 +856,7 @@ exports.handler = async (event) => {
     });
 
     console.log(
-      `Resolver result for ${parentTypeName}.${fieldName}:`,
+      `Raw resolver result for ${parentTypeName}.${fieldName}:`,
       JSON.stringify(result, null, 2)
     );
     return result;
