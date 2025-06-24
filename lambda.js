@@ -557,27 +557,35 @@ const resolvers = {
         const { recipeId, saleAmount, quantitySold } = args;
 
         // Validate inputs
-        if (!recipeId) {
-          console.error("Recipe ID is required");
+        if (!recipeId || typeof recipeId !== "string") {
+          console.error("Invalid recipe ID:", { recipeId });
           return {
             success: false,
-            error: "Recipe ID is required",
+            error: "Invalid recipe ID",
             sale: null,
           };
         }
-        if (saleAmount == null || saleAmount <= 0) {
-          console.error("Invalid sale amount");
+        if (
+          saleAmount == null ||
+          saleAmount <= 0 ||
+          isNaN(Number(saleAmount))
+        ) {
+          console.error("Invalid sale amount:", { saleAmount });
           return {
             success: false,
-            error: "Sale amount must be greater than 0",
+            error: "Sale amount must be a positive number",
             sale: null,
           };
         }
-        if (quantitySold == null || quantitySold <= 0) {
-          console.error("Invalid quantity sold");
+        if (
+          quantitySold == null ||
+          !Number.isInteger(Number(quantitySold)) ||
+          quantitySold <= 0
+        ) {
+          console.error("Invalid quantity sold:", { quantitySold });
           return {
             success: false,
-            error: "Quantity sold must be greater than 0",
+            error: "Quantity sold must be a positive integer",
             sale: null,
           };
         }
@@ -641,15 +649,15 @@ const resolvers = {
           }
 
           // Create sale record
-          const sale = await Sale.create(
-            {
-              id: uuidv4(),
-              saleAmount: Number(saleAmount),
-              recipeId,
-              createdAt: new Date(),
-            },
-            { transaction: t }
-          );
+          const saleData = {
+            id: uuidv4(),
+            saleAmount: Number(saleAmount),
+            quantitySold: Number(quantitySold),
+            recipeId,
+            createdAt: new Date(),
+          };
+          console.log("Creating sale:", JSON.stringify(saleData, null, 2));
+          const sale = await Sale.create(saleData, { transaction: t });
           return sale;
         });
 
