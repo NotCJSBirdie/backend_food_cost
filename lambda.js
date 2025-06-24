@@ -301,9 +301,7 @@ const resolvers = {
     ) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in addIngredient");
-        throw new GraphQLError("Sequelize instance missing", {
-          extensions: { code: "INTERNAL_SERVER_ERROR" },
-        });
+        return { success: false, error: "Sequelize instance missing" };
       }
       try {
         const ingredient = await Ingredient.create({
@@ -333,9 +331,10 @@ const resolvers = {
           message: error.message,
           stack: error.stack,
         });
-        throw new GraphQLError("Failed to add ingredient", {
-          extensions: { code: "DATABASE_ERROR", originalError: error.message },
-        });
+        return {
+          success: false,
+          error: error.message || "Failed to add ingredient",
+        };
       }
     },
     createRecipe: async (
@@ -345,9 +344,7 @@ const resolvers = {
     ) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in createRecipe");
-        throw new GraphQLError("Sequelize instance missing", {
-          extensions: { code: "INTERNAL_SERVER_ERROR" },
-        });
+        return { success: false, error: "Sequelize instance missing" };
       }
       try {
         if (
@@ -356,12 +353,11 @@ const resolvers = {
           ingredientIds.length !== quantities.length
         ) {
           console.error("Invalid recipe input:", { ingredientIds, quantities });
-          throw new GraphQLError(
-            "Invalid recipe input: ingredient IDs and quantities must match",
-            {
-              extensions: { code: "BAD_USER_INPUT" },
-            }
-          );
+          return {
+            success: false,
+            error:
+              "Invalid recipe input: ingredient IDs and quantities must match",
+          };
         }
 
         const ingredients = await Ingredient.findAll({
@@ -369,9 +365,7 @@ const resolvers = {
         });
         if (ingredients.length !== ingredientIds.length) {
           console.error("Some ingredients not found:", ingredientIds);
-          throw new GraphQLError("Some ingredients not found", {
-            extensions: { code: "NOT_FOUND" },
-          });
+          return { success: false, error: "Some ingredients not found" };
         }
 
         let totalCost = 0;
@@ -451,24 +445,21 @@ const resolvers = {
           message: error.message,
           stack: error.stack,
         });
-        throw new GraphQLError("Failed to create recipe", {
-          extensions: { code: "DATABASE_ERROR", originalError: error.message },
-        });
+        return {
+          success: false,
+          error: error.message || "Failed to create recipe",
+        };
       }
     },
     recordSale: async (_, { recipeId, saleAmount, quantitySold }, context) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in recordSale");
-        throw new GraphQLError("Sequelize instance missing", {
-          extensions: { code: "INTERNAL_SERVER_ERROR" },
-        });
+        return { success: false, error: "Sequelize instance missing" };
       }
       try {
         if (!recipeId) {
           console.error("Recipe ID is required");
-          throw new GraphQLError("Recipe ID is required", {
-            extensions: { code: "BAD_USER_INPUT" },
-          });
+          return { success: false, error: "Recipe ID is required" };
         }
 
         const recipe = await Recipe.findByPk(recipeId, {
@@ -476,9 +467,7 @@ const resolvers = {
         });
         if (!recipe) {
           console.error(`Recipe ${recipeId} not found`);
-          throw new GraphQLError(`Recipe ${recipeId} not found`, {
-            extensions: { code: "NOT_FOUND" },
-          });
+          return { success: false, error: `Recipe ${recipeId} not found` };
         }
 
         const ingredients = recipe.ingredients || [];
@@ -489,23 +478,19 @@ const resolvers = {
             });
             if (!ingredient) {
               console.error(`Ingredient ${ri.ingredientId} not found`);
-              throw new GraphQLError(
-                `Ingredient ${ri.ingredientId} not found`,
-                {
-                  extensions: { code: "NOT_FOUND" },
-                }
-              );
+              return {
+                success: false,
+                error: `Ingredient ${ri.ingredientId} not found`,
+              };
             }
             const stockDeduction = ri.quantity * (quantitySold || 0);
             const newStock = (ingredient.stockQuantity || 0) - stockDeduction;
             if (newStock < 0) {
               console.error(`Insufficient stock for ${ingredient.name}`);
-              throw new GraphQLError(
-                `Insufficient stock for ${ingredient.name}`,
-                {
-                  extensions: { code: "BAD_USER_INPUT" },
-                }
-              );
+              return {
+                success: false,
+                error: `Insufficient stock for ${ingredient.name}`,
+              };
             }
             await ingredient.update(
               { stockQuantity: newStock },
@@ -585,9 +570,10 @@ const resolvers = {
           message: error.message,
           stack: error.stack,
         });
-        throw new GraphQLError("Failed to record sale", {
-          extensions: { code: "DATABASE_ERROR", originalError: error.message },
-        });
+        return {
+          success: false,
+          error: error.message || "Failed to record sale",
+        };
       }
     },
     deleteIngredient: async (_, { id }, context) => {
@@ -777,7 +763,7 @@ const resolvers = {
             const newStock =
               (ingredient.stockQuantity || 0) + (ri.quantity || 0);
             console.log(
-              `Updating stock for ingredient ${ri.ingredientId}: ${ingredient.stockQuantity} + ${ri.quantity} = ${newStock}`
+              `Updating stock ofr ingredient ${ri.ingredientId}: ${ingredient.stockQuantity} + ${ri.quantity} = ${newStock}`
             );
             await ingredient.update(
               { stockQuantity: newStock },
@@ -808,14 +794,19 @@ const resolvers = {
 exports.handler = async (event) => {
   console.log("Lambda event:", JSON.stringify(event, null, 2));
 
-  // Handle both query and mutation event structures
+  // Handle both query (event.payload.info) and mutation (event.payload) structures
   const payload = event.payload || {};
   const info = payload.info || {};
+  // Prioritize event.payload.info for queries, fall back to event.payload for mutations
   const parentTypeName =
-    info.parentTypeName || payload.parentTypeName || "Unknown";
-  const fieldName = info.fieldName || payload.fieldName || "unknown";
+    info.parentTypeName ||
+    payload.parentTypeName ||
+    event.info?.parentTypeName ||
+    "Unknown";
+  const fieldName =
+    info.fieldName || payload.fieldName || event.info?.fieldName || "unknown";
+  // Combine arguments from possible locations
   const args = payload.arguments || event.arguments || {};
-  const parent = event.source || null;
 
   console.log(`Processing ${parentTypeName}.${fieldName}`);
 
