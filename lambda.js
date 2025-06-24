@@ -808,11 +808,13 @@ const resolvers = {
 exports.handler = async (event) => {
   console.log("Lambda event:", JSON.stringify(event, null, 2));
 
-  // Extract from event.payload instead of event.info
+  // Handle both query and mutation event structures
   const payload = event.payload || {};
-  const parentTypeName = payload.parentTypeName || "Unknown";
-  const fieldName = payload.fieldName || "unknown";
-  const args = payload.arguments || {};
+  const info = payload.info || {};
+  const parentTypeName =
+    info.parentTypeName || payload.parentTypeName || "Unknown";
+  const fieldName = info.fieldName || payload.fieldName || "unknown";
+  const args = payload.arguments || event.arguments || {};
   const parent = event.source || null;
 
   console.log(`Processing ${parentTypeName}.${fieldName}`);
