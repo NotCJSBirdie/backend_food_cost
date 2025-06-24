@@ -17,7 +17,10 @@ async function initializeDatabase() {
       await sequelize.authenticate();
       await sequelize.sync({ force: false });
       isConnected = true;
-      console.log("Database initialized successfully");
+      console.log("Database connection established", {
+        host: process.env.DB_HOST,
+        database: process.env.DB_NAME,
+      });
     } catch (error) {
       console.error("Failed to initialize database:", {
         message: error.message,
@@ -75,7 +78,7 @@ const resolvers = {
         const totalMargin = totalSales - totalCosts;
 
         const ingredients = await Ingredient.findAll();
-        const lowStockIngredients = ingredients
+        const lowStockIngredients = (ingredients || [])
           .filter(
             (ing) => Number(ing.stockQuantity) <= Number(ing.restockThreshold)
           )
@@ -91,9 +94,9 @@ const resolvers = {
           }));
 
         const result = {
-          totalSales: totalSales ? Number(totalSales) : null,
-          totalCosts: totalCosts ? Number(totalCosts) : null,
-          totalMargin: totalMargin ? Number(totalMargin) : null,
+          totalSales: totalSales ? Number(totalSales) : 0,
+          totalCosts: totalCosts ? Number(totalCosts) : 0,
+          totalMargin: totalMargin ? Number(totalMargin) : 0,
           lowStockIngredients: lowStockIngredients || [],
         };
 
@@ -121,7 +124,7 @@ const resolvers = {
       }
       try {
         const ingredients = await Ingredient.findAll();
-        const result = ingredients.map((ing) => ({
+        const result = (ingredients || []).map((ing) => ({
           id: ing.id ? String(ing.id) : null,
           name: ing.name || null,
           unitPrice: ing.unitPrice ? Number(ing.unitPrice) : null,
@@ -166,7 +169,7 @@ const resolvers = {
             },
           ],
         });
-        const result = recipes.map((recipe) => {
+        const result = (recipes || []).map((recipe) => {
           const ingredients =
             recipe.ingredients?.filter((ri) => ri.ingredient) || [];
           const totalCost = ingredients.reduce((sum, ri) => {
@@ -243,7 +246,7 @@ const resolvers = {
             },
           ],
         });
-        const result = sales.map((sale) => {
+        const result = (sales || []).map((sale) => {
           const recipeIngredients =
             sale.recipe?.ingredients?.filter((ri) => ri.ingredient) || [];
           return {
@@ -787,11 +790,11 @@ const resolvers = {
 };
 
 exports.handler = async (event) => {
-  console.log("Lambda event:", JSON.stringify(event, null, 2));
-  console.log("Lambda handler version: 2025-06-24-v1"); // Version marker for debugging
+  console.log("Raw Lambda event:", JSON.stringify(event, null, 2));
+  console.log("Lambda handler version: 2025-06-24-v2");
 
-  // Parse event for queries (event.payload.info) and mutations (event.payload)
-  const payload = event.payload || {};
+  // Parse event for queries and mutations
+  const payload = event.payload || event;
   const info = payload.info || {};
   const parentTypeName =
     info.parentTypeName || payload.parentTypeName || "Unknown";
@@ -804,6 +807,9 @@ exports.handler = async (event) => {
     args: JSON.stringify(args, null, 2),
     hasInfo: !!info.parentTypeName,
     hasPayload: !!payload.parentTypeName,
+    eventKeys: Object.keys(event),
+    payloadKeys: Object.keys(payload),
+    infoKeys: Object.keys(info),
   });
 
   console.log(`Processing ${parentTypeName}.${fieldName}`);
@@ -844,7 +850,6 @@ exports.handler = async (event) => {
       };
     }
 
-    // Call resolver without parent, as it's unused
     const result = await resolver(null, args, context, {
       fieldName,
       parentTypeName,
