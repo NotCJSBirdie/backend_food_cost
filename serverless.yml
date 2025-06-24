@@ -76,7 +76,7 @@ appSync:
     FoodCostLambdaDataSource:
       type: AWS_LAMBDA
       config:
-        functionName: FoodCostLambda
+        functionName: food-cost-api-prod-FoodCostLambda
   resolvers:
     Query.dashboardStats:
       kind: UNIT
