@@ -40,6 +40,24 @@ type DeleteResult {
   error: String
 }
 
+type IngredientResult {
+  success: Boolean!
+  error: String
+  ingredient: Ingredient
+}
+
+type RecipeResult {
+  success: Boolean!
+  error: String
+  recipe: Recipe
+}
+
+type SaleResult {
+  success: Boolean!
+  error: String
+  sale: Sale
+}
+
 type Mutation {
   addIngredient(
     name: String
@@ -47,14 +65,14 @@ type Mutation {
     unit: String
     stockQuantity: Float
     restockThreshold: Float
-  ): Ingredient
+  ): IngredientResult
   createRecipe(
     name: String
     ingredientIds: [ID]
     quantities: [Float]
     targetMargin: Float
-  ): Recipe
-  recordSale(recipeId: ID, saleAmount: Float, quantitySold: Int): Sale
+  ): RecipeResult
+  recordSale(recipeId: ID, saleAmount: Float, quantitySold: Int): SaleResult
   deleteIngredient(id: ID!): DeleteResult
   deleteRecipe(id: ID!): DeleteResult
   deleteSale(id: ID!): DeleteResult

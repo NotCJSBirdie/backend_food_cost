@@ -307,30 +307,77 @@ const resolvers = {
     addIngredient: async (_, args, context) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in addIngredient");
-        return { success: false, error: "Sequelize instance missing" };
+        return {
+          success: false,
+          error: "Sequelize instance missing",
+          ingredient: null,
+        };
       }
       try {
         const { name, unitPrice, unit, stockQuantity, restockThreshold } = args;
+        // Validate inputs
+        if (!name || name.trim() === "") {
+          return {
+            success: false,
+            error: "Ingredient name is required",
+            ingredient: null,
+          };
+        }
+        if (unitPrice == null || unitPrice < 0) {
+          return {
+            success: false,
+            error: "Unit price must be non-negative",
+            ingredient: null,
+          };
+        }
+        if (!unit || unit.trim() === "") {
+          return {
+            success: false,
+            error: "Unit is required",
+            ingredient: null,
+          };
+        }
+        if (stockQuantity == null || stockQuantity < 0) {
+          return {
+            success: false,
+            error: "Stock quantity must be non-negative",
+            ingredient: null,
+          };
+        }
+        if (restockThreshold == null || restockThreshold < 0) {
+          return {
+            success: false,
+            error: "Restock threshold must be non-negative",
+            ingredient: null,
+          };
+        }
+
         const ingredient = await Ingredient.create({
           id: uuidv4(),
-          name: name || null,
-          unitPrice: unitPrice ? Number(unitPrice) : null,
-          unit: unit || null,
-          stockQuantity: stockQuantity ? Number(stockQuantity) : 0,
-          restockThreshold: restockThreshold ? Number(restockThreshold) : null,
+          name: name.trim(),
+          unitPrice: Number(unitPrice),
+          unit: unit.trim(),
+          stockQuantity: Number(stockQuantity),
+          restockThreshold: Number(restockThreshold),
         });
         const result = {
-          id: ingredient.id ? String(ingredient.id) : null,
-          name: ingredient.name || null,
-          unitPrice: ingredient.unitPrice ? Number(ingredient.unitPrice) : null,
-          unit: ingredient.unit || null,
-          stockQuantity:
-            ingredient.stockQuantity != null
-              ? Number(ingredient.stockQuantity)
-              : 0,
-          restockThreshold: ingredient.restockThreshold
-            ? Number(ingredient.restockThreshold)
-            : null,
+          success: true,
+          error: null,
+          ingredient: {
+            id: ingredient.id ? String(ingredient.id) : null,
+            name: ingredient.name || null,
+            unitPrice: ingredient.unitPrice
+              ? Number(ingredient.unitPrice)
+              : null,
+            unit: ingredient.unit || null,
+            stockQuantity:
+              ingredient.stockQuantity != null
+                ? Number(ingredient.stockQuantity)
+                : 0,
+            restockThreshold: ingredient.restockThreshold
+              ? Number(ingredient.restockThreshold)
+              : null,
+          },
         };
         console.log("addIngredient result:", JSON.stringify(result, null, 2));
         return result;
@@ -338,30 +385,60 @@ const resolvers = {
         console.error("Error in addIngredient:", {
           message: error.message,
           stack: error.stack,
+          args,
         });
         return {
           success: false,
           error: error.message || "Failed to add ingredient",
+          ingredient: null,
         };
       }
     },
     createRecipe: async (_, args, context) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in createRecipe");
-        return { success: false, error: "Sequelize instance missing" };
+        return {
+          success: false,
+          error: "Sequelize instance missing",
+          recipe: null,
+        };
       }
       try {
         const { name, ingredientIds, quantities, targetMargin } = args;
+        // Validate inputs
+        if (!name || name.trim() === "") {
+          return {
+            success: false,
+            error: "Recipe name is required",
+            recipe: null,
+          };
+        }
         if (
           !ingredientIds ||
           !quantities ||
-          ingredientIds.length !== quantities.length
+          ingredientIds.length !== quantities.length ||
+          ingredientIds.length === 0
         ) {
           console.error("Invalid recipe input:", { ingredientIds, quantities });
           return {
             success: false,
             error:
-              "Invalid recipe input: ingredient IDs and quantities must match",
+              "Invalid recipe input: ingredient IDs and quantities must match and be non-empty",
+            recipe: null,
+          };
+        }
+        if (quantities.some((q) => q == null || q <= 0)) {
+          return {
+            success: false,
+            error: "All quantities must be positive numbers",
+            recipe: null,
+          };
+        }
+        if (targetMargin != null && (targetMargin < 0 || targetMargin >= 1)) {
+          return {
+            success: false,
+            error: "Target margin must be between 0 and 1",
+            recipe: null,
           };
         }
 
@@ -370,13 +447,17 @@ const resolvers = {
         });
         if (ingredients.length !== ingredientIds.length) {
           console.error("Some ingredients not found:", ingredientIds);
-          return { success: false, error: "Some ingredients not found" };
+          return {
+            success: false,
+            error: "Some ingredients not found",
+            recipe: null,
+          };
         }
 
         let totalCost = 0;
         const recipeIngredients = ingredientIds.map((id, i) => {
           const ingredient = ingredients.find((ing) => ing.id == id);
-          const quantity = quantities[i] ? Number(quantities[i]) : 0;
+          const quantity = Number(quantities[i]);
           totalCost += (ingredient.unitPrice || 0) * quantity;
           return {
             ingredientId: id,
@@ -392,7 +473,7 @@ const resolvers = {
           const newRecipe = await Recipe.create(
             {
               id: uuidv4(),
-              name: name || null,
+              name: name.trim(),
               totalCost: totalCost || null,
               suggestedPrice: suggestedPrice || null,
             },
@@ -417,32 +498,36 @@ const resolvers = {
         });
 
         const result = {
-          id: savedRecipe.id ? String(savedRecipe.id) : null,
-          name: savedRecipe.name || null,
-          totalCost: totalCost ? Number(totalCost) : null,
-          suggestedPrice: savedRecipe.suggestedPrice
-            ? Number(savedRecipe.suggestedPrice)
-            : null,
-          ingredients:
-            savedRecipe.ingredients?.map((ri) => ({
-              id: ri.id ? String(ri.id) : null,
-              quantity: ri.quantity ? Number(ri.quantity) : null,
-              ingredient: {
-                id: ri.ingredient.id ? String(ri.ingredient.id) : null,
-                name: ri.ingredient.name || null,
-                unitPrice: ri.ingredient.unitPrice
-                  ? Number(ri.ingredient.unitPrice)
-                  : null,
-                unit: ri.ingredient.unit || null,
-                stockQuantity:
-                  ri.ingredient.stockQuantity != null
-                    ? Number(ri.ingredient.stockQuantity)
-                    : 0,
-                restockThreshold: ri.ingredient.restockThreshold
-                  ? Number(ri.ingredient.restockThreshold)
-                  : null,
-              },
-            })) || [],
+          success: true,
+          error: null,
+          recipe: {
+            id: savedRecipe.id ? String(savedRecipe.id) : null,
+            name: savedRecipe.name || null,
+            totalCost: totalCost ? Number(totalCost) : null,
+            suggestedPrice: savedRecipe.suggestedPrice
+              ? Number(savedRecipe.suggestedPrice)
+              : null,
+            ingredients:
+              savedRecipe.ingredients?.map((ri) => ({
+                id: ri.id ? String(ri.id) : null,
+                quantity: ri.quantity ? Number(ri.quantity) : null,
+                ingredient: {
+                  id: ri.ingredient.id ? String(ri.ingredient.id) : null,
+                  name: ri.ingredient.name || null,
+                  unitPrice: ri.ingredient.unitPrice
+                    ? Number(ri.ingredient.unitPrice)
+                    : null,
+                  unit: ri.ingredient.unit || null,
+                  stockQuantity:
+                    ri.ingredient.stockQuantity != null
+                      ? Number(ri.ingredient.stockQuantity)
+                      : 0,
+                  restockThreshold: ri.ingredient.restockThreshold
+                    ? Number(ri.ingredient.restockThreshold)
+                    : null,
+                },
+              })) || [],
+          },
         };
         console.log("createRecipe result:", JSON.stringify(result, null, 2));
         return result;
@@ -450,17 +535,23 @@ const resolvers = {
         console.error("Error in createRecipe:", {
           message: error.message,
           stack: error.stack,
+          args,
         });
         return {
           success: false,
           error: error.message || "Failed to create recipe",
+          recipe: null,
         };
       }
     },
     recordSale: async (_, args, context) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in recordSale");
-        return { success: false, error: "Sequelize instance missing" };
+        return {
+          success: false,
+          error: "Sequelize instance missing",
+          sale: null,
+        };
       }
       try {
         const { recipeId, saleAmount, quantitySold } = args;
@@ -468,20 +559,26 @@ const resolvers = {
         // Validate inputs
         if (!recipeId) {
           console.error("Recipe ID is required");
-          return { success: false, error: "Recipe ID is required" };
+          return {
+            success: false,
+            error: "Recipe ID is required",
+            sale: null,
+          };
         }
-        if (!saleAmount || saleAmount <= 0) {
+        if (saleAmount == null || saleAmount <= 0) {
           console.error("Invalid sale amount");
           return {
             success: false,
             error: "Sale amount must be greater than 0",
+            sale: null,
           };
         }
-        if (!quantitySold || quantitySold <= 0) {
+        if (quantitySold == null || quantitySold <= 0) {
           console.error("Invalid quantity sold");
           return {
             success: false,
             error: "Quantity sold must be greater than 0",
+            sale: null,
           };
         }
 
@@ -499,7 +596,11 @@ const resolvers = {
         });
         if (!recipe) {
           console.error(`Recipe ${recipeId} not found`);
-          return { success: false, error: `Recipe ${recipeId} not found` };
+          return {
+            success: false,
+            error: `Recipe ${recipeId} not found`,
+            sale: null,
+          };
         }
 
         // Validate recipe ingredients
@@ -509,6 +610,7 @@ const resolvers = {
           return {
             success: false,
             error: `Recipe ${recipeId} has no ingredients`,
+            sale: null,
           };
         }
 
@@ -570,42 +672,46 @@ const resolvers = {
 
         // Format result
         const result = {
-          id: savedSale.id ? String(savedSale.id) : null,
-          saleAmount: savedSale.saleAmount
-            ? Number(savedSale.saleAmount)
-            : null,
-          createdAt: savedSale.createdAt
-            ? savedSale.createdAt.toISOString()
-            : null,
-          recipe: {
-            id: savedSale.recipe.id ? String(savedSale.recipe.id) : null,
-            name: savedSale.recipe.name || null,
-            totalCost: savedSale.recipe.totalCost
-              ? Number(savedSale.recipe.totalCost)
+          success: true,
+          error: null,
+          sale: {
+            id: savedSale.id ? String(savedSale.id) : null,
+            saleAmount: savedSale.saleAmount
+              ? Number(savedSale.saleAmount)
               : null,
-            suggestedPrice: savedSale.recipe.suggestedPrice
-              ? Number(savedSale.recipe.suggestedPrice)
+            createdAt: savedSale.createdAt
+              ? savedSale.createdAt.toISOString()
               : null,
-            ingredients:
-              savedSale.recipe.ingredients?.map((ri) => ({
-                id: ri.id ? String(ri.id) : null,
-                quantity: ri.quantity ? Number(ri.quantity) : null,
-                ingredient: {
-                  id: ri.ingredient.id ? String(ri.ingredient.id) : null,
-                  name: ri.ingredient.name || null,
-                  unitPrice: ri.ingredient.unitPrice
-                    ? Number(ri.ingredient.unitPrice)
-                    : null,
-                  unit: ri.ingredient.unit || null,
-                  stockQuantity:
-                    ri.ingredient.stockQuantity != null
-                      ? Number(ri.ingredient.stockQuantity)
-                      : 0,
-                  restockThreshold: ri.ingredient.restockThreshold
-                    ? Number(ri.ingredient.restockThreshold)
-                    : null,
-                },
-              })) || [],
+            recipe: {
+              id: savedSale.recipe.id ? String(savedSale.recipe.id) : null,
+              name: savedSale.recipe.name || null,
+              totalCost: savedSale.recipe.totalCost
+                ? Number(savedSale.recipe.totalCost)
+                : null,
+              suggestedPrice: savedSale.recipe.suggestedPrice
+                ? Number(savedSale.recipe.suggestedPrice)
+                : null,
+              ingredients:
+                savedSale.recipe.ingredients?.map((ri) => ({
+                  id: ri.id ? String(ri.id) : null,
+                  quantity: ri.quantity ? Number(ri.quantity) : null,
+                  ingredient: {
+                    id: ri.ingredient.id ? String(ri.ingredient.id) : null,
+                    name: ri.ingredient.name || null,
+                    unitPrice: ri.ingredient.unitPrice
+                      ? Number(ri.ingredient.unitPrice)
+                      : null,
+                    unit: ri.ingredient.unit || null,
+                    stockQuantity:
+                      ri.ingredient.stockQuantity != null
+                        ? Number(ri.ingredient.stockQuantity)
+                        : 0,
+                    restockThreshold: ri.ingredient.restockThreshold
+                      ? Number(ri.ingredient.restockThreshold)
+                      : null,
+                  },
+                })) || [],
+            },
           },
         };
         console.log("recordSale result:", JSON.stringify(result, null, 2));
@@ -619,6 +725,7 @@ const resolvers = {
         return {
           success: false,
           error: error.message || "Failed to record sale",
+          sale: null,
         };
       }
     },
@@ -652,7 +759,7 @@ const resolvers = {
         });
 
         console.log(`Ingredient ${id} deleted successfully`);
-        return { success: true };
+        return { success: true, error: null };
       } catch (error) {
         console.error("Error in deleteIngredient:", {
           message: error.message,
@@ -745,7 +852,7 @@ const resolvers = {
         });
 
         console.log(`Recipe ${id} deleted successfully`);
-        return { success: true };
+        return { success: true, error: null };
       } catch (error) {
         console.error("Error in deleteRecipe:", {
           message: error.message,
@@ -821,7 +928,7 @@ const resolvers = {
         });
 
         console.log(`Sale ${id} deleted successfully`);
-        return { success: true };
+        return { success: true, error: null };
       } catch (error) {
         console.error("Error in deleteSale:", {
           message: error.message,
@@ -839,7 +946,7 @@ const resolvers = {
 
 exports.handler = async (event) => {
   console.log("Raw Lambda event:", JSON.stringify(event, null, 2));
-  console.log("Lambda handler version: 2025-06-24-v3");
+  console.log("Lambda handler version: 2025-06-24-v5");
 
   // Parse event for queries and mutations
   const payload = event.payload || event;
