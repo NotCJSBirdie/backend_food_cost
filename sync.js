@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const { syncDatabase } = require("./data-source");
 
 syncDatabase()
