@@ -294,16 +294,13 @@ const resolvers = {
     },
   },
   Mutation: {
-    addIngredient: async (
-      _,
-      { name, unitPrice, unit, stockQuantity, restockThreshold },
-      context
-    ) => {
+    addIngredient: async (_, args, context) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in addIngredient");
         return { success: false, error: "Sequelize instance missing" };
       }
       try {
+        const { name, unitPrice, unit, stockQuantity, restockThreshold } = args;
         const ingredient = await Ingredient.create({
           id: uuidv4(),
           name: name || null,
@@ -337,16 +334,13 @@ const resolvers = {
         };
       }
     },
-    createRecipe: async (
-      _,
-      { name, ingredientIds, quantities, targetMargin },
-      context
-    ) => {
+    createRecipe: async (_, args, context) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in createRecipe");
         return { success: false, error: "Sequelize instance missing" };
       }
       try {
+        const { name, ingredientIds, quantities, targetMargin } = args;
         if (
           !ingredientIds ||
           !quantities ||
@@ -451,12 +445,13 @@ const resolvers = {
         };
       }
     },
-    recordSale: async (_, { recipeId, saleAmount, quantitySold }, context) => {
+    recordSale: async (_, args, context) => {
       if (!context.sequelize) {
         console.error("Sequelize instance missing in recordSale");
         return { success: false, error: "Sequelize instance missing" };
       }
       try {
+        const { recipeId, saleAmount, quantitySold } = args;
         if (!recipeId) {
           console.error("Recipe ID is required");
           return { success: false, error: "Recipe ID is required" };
@@ -763,7 +758,7 @@ const resolvers = {
             const newStock =
               (ingredient.stockQuantity || 0) + (ri.quantity || 0);
             console.log(
-              `Updating stock ofr ingredient ${ri.ingredientId}: ${ingredient.stockQuantity} + ${ri.quantity} = ${newStock}`
+              `Updating stock for ingredient ${ri.ingredientId}: ${ingredient.stockQuantity} + ${ri.quantity} = ${newStock}`
             );
             await ingredient.update(
               { stockQuantity: newStock },
@@ -794,18 +789,12 @@ const resolvers = {
 exports.handler = async (event) => {
   console.log("Lambda event:", JSON.stringify(event, null, 2));
 
-  // Handle both query (event.payload.info) and mutation (event.payload) structures
+  // Unified event parsing for queries and mutations
   const payload = event.payload || {};
   const info = payload.info || {};
-  // Prioritize event.payload.info for queries, fall back to event.payload for mutations
   const parentTypeName =
-    info.parentTypeName ||
-    payload.parentTypeName ||
-    event.info?.parentTypeName ||
-    "Unknown";
-  const fieldName =
-    info.fieldName || payload.fieldName || event.info?.fieldName || "unknown";
-  // Combine arguments from possible locations
+    info.parentTypeName || payload.parentTypeName || "Unknown";
+  const fieldName = info.fieldName || payload.fieldName || "unknown";
   const args = payload.arguments || event.arguments || {};
 
   console.log(`Processing ${parentTypeName}.${fieldName}`);
@@ -843,7 +832,8 @@ exports.handler = async (event) => {
       };
     }
 
-    const result = await resolver(parent, args, context, {
+    // Call resolver without parent, as it's unused in top-level resolvers
+    const result = await resolver(null, args, context, {
       fieldName,
       parentTypeName,
     });
