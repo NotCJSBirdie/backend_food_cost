@@ -1,4 +1,5 @@
 const { Sequelize, DataTypes } = require("sequelize");
+const { v4: uuidv4 } = require("uuid");
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -38,6 +39,7 @@ const Ingredient = sequelize.define(
     id: {
       type: DataTypes.STRING,
       primaryKey: true,
+      defaultValue: uuidv4,
     },
     name: {
       type: DataTypes.STRING,
@@ -76,6 +78,7 @@ const Recipe = sequelize.define(
     id: {
       type: DataTypes.STRING,
       primaryKey: true,
+      defaultValue: uuidv4,
     },
     name: {
       type: DataTypes.STRING,
@@ -102,14 +105,19 @@ const Sale = sequelize.define(
   "Sale",
   {
     id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       primaryKey: true,
-      autoIncrement: true,
+      defaultValue: uuidv4,
     },
     saleAmount: {
       type: DataTypes.FLOAT,
       allowNull: false,
       validate: { min: 0 },
+    },
+    quantitySold: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: { min: 1, isInt: true },
     },
     recipeId: {
       type: DataTypes.STRING,
