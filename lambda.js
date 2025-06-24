@@ -535,7 +535,7 @@ const resolvers = {
               ? Number(savedSale.recipe.totalCost)
               : null,
             suggestedPrice: savedSale.recipe.suggestedPrice
-              ? Number(savedSale.recipe.suggestedPrice)
+              ? Number(savedSale.suggestedPrice)
               : null,
             ingredients:
               savedSale.recipe.ingredients?.map((ri) => ({
@@ -788,8 +788,9 @@ const resolvers = {
 
 exports.handler = async (event) => {
   console.log("Lambda event:", JSON.stringify(event, null, 2));
+  console.log("Lambda handler version: 2025-06-24-v1"); // Version marker for debugging
 
-  // Unified event parsing for queries and mutations
+  // Parse event for queries (event.payload.info) and mutations (event.payload)
   const payload = event.payload || {};
   const info = payload.info || {};
   const parentTypeName =
@@ -797,12 +798,23 @@ exports.handler = async (event) => {
   const fieldName = info.fieldName || payload.fieldName || "unknown";
   const args = payload.arguments || event.arguments || {};
 
+  console.log("Extracted values:", {
+    parentTypeName,
+    fieldName,
+    args: JSON.stringify(args, null, 2),
+    hasInfo: !!info.parentTypeName,
+    hasPayload: !!payload.parentTypeName,
+  });
+
   console.log(`Processing ${parentTypeName}.${fieldName}`);
 
   try {
     await initializeDatabase();
   } catch (error) {
-    console.error("Database initialization error:", error);
+    console.error("Database initialization error:", {
+      message: error.message,
+      stack: error.stack,
+    });
     return {
       data: null,
       errors: [
@@ -832,7 +844,7 @@ exports.handler = async (event) => {
       };
     }
 
-    // Call resolver without parent, as it's unused in top-level resolvers
+    // Call resolver without parent, as it's unused
     const result = await resolver(null, args, context, {
       fieldName,
       parentTypeName,
