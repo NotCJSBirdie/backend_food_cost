@@ -1,0 +1,31 @@
+{"id":"8a88cbe1-9af4-4e46-ac78-1f1966cf2f5d","name":"Sugar","unitPrice":10,"unit":"g","stockQuantity":99890,"restockThreshold":100}
+{"id":"f764f4ee-6386-43fe-9556-e4e8bf4a5525","name":"Eggs","unitPrice":12,"unit":"g","stockQuantity":99890,"restockThreshold":100}
+{"id":"261581f9-a129-45ac-b262-64cfbdd2d7ea","name":"Apple","unitPrice":2,"unit":"g","stockQuantity":9960,"restockThreshold":100}
+{"id":"b66628d3-f4d1-4cc3-9051-063ec6b660e9","name":"Cinnamon","unitPrice":2,"unit":"g","stockQuantity":9990,"restockThreshold":100}
+{"id":"d466a84a-b23d-4cd1-a981-1633725eebfe","name":"Nutmeg","unitPrice":3,"unit":"g","stockQuantity":9989.97,"restockThreshold":100}
+{"id":"2edaed42-ff7b-4515-9de9-ba4409037e73","name":"Lemon Juice","unitPrice":4,"unit":"l","stockQuantity":9990,"restockThreshold":100}
+{"id":"e3954031-6df9-49f2-b914-fbb2623610bd","name":"Flour","unitPrice":10,"unit":"g","stockQuantity":99900,"restockThreshold":100}
+{"id":"5c43bf2e-1b0d-4688-a7ac-ca1aaed32a5c","name":"English Muffin","unitPrice":4,"unit":"g","stockQuantity":9990,"restockThreshold":100}
+{"id":"3a11a3e7-2b3c-4590-b9dd-1debb41b7b57","name":"Milk","unitPrice":10,"unit":"L","stockQuantity":4900,"restockThreshold":100}
+{"id":"582ada61-b1b3-41ce-a94e-08a63c121397","name":"Baking powder","unitPrice":10,"unit":"g","stockQuantity":900,"restockThreshold":100}
+{"id":"6ef7164e-381a-4ad4-96f8-b20f1fe53bf6","name":"Cocoa Powder","unitPrice":4,"unit":"g","stockQuantity":900,"restockThreshold":100}
+{"id":"7a4e2fb4-f7da-481e-810e-9705379cc4b5","name":"Mustard","unitPrice":1.7,"unit":"mL","stockQuantity":10000,"restockThreshold":100}
+{"id":"dc840550-d22b-4a34-b89e-41af3bb3b9d9","name":"Canadian Bacon","unitPrice":4,"unit":"g","stockQuantity":4990,"restockThreshold":100}
+{"id":"d5904720-f692-4081-847a-836b5d4624cc","name":"American Cheese","unitPrice":3,"unit":"g","stockQuantity":9990,"restockThreshold":100}
+{"id":"89d1ad1a-2d4e-4a48-b020-ced560fa244e","name":"Salted Butter","unitPrice":5,"unit":"g","stockQuantity":9990,"restockThreshold":100}
+{"id":"9b17f22f-8918-45e6-b884-841e107b887d","name":"Burger Buns","unitPrice":1.5,"unit":"g","stockQuantity":800,"restockThreshold":100}
+{"id":"cf1c1eaf-ad54-416e-ac4c-f5621c2f7e60","name":"Beef Patty","unitPrice":2,"unit":"g","stockQuantity":9450,"restockThreshold":100}
+{"id":"d3a0e1a7-75c3-406d-9a4b-d9cf83113baa","name":"Chicken","unitPrice":5,"unit":"g","stockQuantity":10000,"restockThreshold":100}
+{"id":"b539fb55-66ae-40d4-a62c-b8fbda9c49eb","name":"Oil","unitPrice":5,"unit":"L","stockQuantity":100,"restockThreshold":100}
+{"id":"f8827d93-eb7b-44ea-bb60-bbc43e0f81bc","name":"Lettuce","unitPrice":1.46,"unit":"g","stockQuantity":9850,"restockThreshold":100}
+{"id":"30c44e7b-f179-4e7c-b880-79c81fab3551","name":"Tomato","unitPrice":3.59,"unit":"g","stockQuantity":9850,"restockThreshold":100}
+{"id":"01651a5e-2f7a-47fd-8873-6a24a09440ea","name":"Onions","unitPrice":0.99,"unit":"g","stockQuantity":9850,"restockThreshold":100}
+{"id":"d0c76c7d-9f2c-4de6-b5d3-ba7dd9bac657","name":"Pickles","unitPrice":2,"unit":"g","stockQuantity":9850,"restockThreshold":100}
+{"id":"04250fcf-9990-4ad9-861e-bf6d4966f019","name":"Ketchup","unitPrice":2,"unit":"mL","stockQuantity":9850,"restockThreshold":100}
+{"id":"c0083834-1589-4259-a6e6-9ae0117ee689","name":"Cheese","unitPrice":7,"unit":"g","stockQuantity":9850,"restockThreshold":100}
+{"id":"3a3502e4-e82d-40a2-ab18-31193587d389","name":"Mayonnaise","unitPrice":3,"unit":"mL","stockQuantity":9850,"restockThreshold":100}
+{"id":"1ee8ae2b-7373-4f4e-9c5f-fc9f446d48a8","name":"Fish","unitPrice":20,"unit":"g","stockQuantity":10000,"restockThreshold":100}
+{"id":"2d6f952d-d9ca-4715-9108-e7cd115dad16","name":"Potato","unitPrice":2,"unit":"g","stockQuantity":9790,"restockThreshold":100}
+{"id":"9513d165-67c5-42c8-9210-9d6794ed1eec","name":"Salt","unitPrice":1,"unit":"g","stockQuantity":9790,"restockThreshold":100}
+{"id":"032f8ad8-bd4d-460a-9cef-1fc7259747db","name":"Water","unitPrice":3,"unit":"l","stockQuantity":10000,"restockThreshold":100}
+{"id":"6eb939fe-4bf3-4570-a0b9-67d9184d8c66","name":"White Boneless Chicken","unitPrice":10,"unit":"g","stockQuantity":10000,"restockThreshold":100}

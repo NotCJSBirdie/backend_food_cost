@@ -1,0 +1,13 @@
+s3://rdsmigrationfoodcostbucket/DDB_Ingredients_import.json
+s3://rdsmigrationfoodcostbucket/DDB_Sales_import.json
+s3://rdsmigrationfoodcostbucket/DDB_Recipes_import.json
+
+
+s3://rdsmigrationfoodcostbucket/Sales.csv
+s3://rdsmigrationfoodcostbucket/Recipes.csv
+s3://rdsmigrationfoodcostbucket/Ingredients.csv
+
+
+s3://rdsmigrationfoodcostbucket/Sales_for_DDB.csv
+s3://rdsmigrationfoodcostbucket/Recipes_for_DDB.csv
+s3://rdsmigrationfoodcostbucket/Ingredients_for_DDB.csv
