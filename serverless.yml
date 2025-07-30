@@ -17,40 +17,44 @@ provider:
     NODE_ENV: ${opt:stage, 'production'}
   tags:
     environment: ${sls:stage}
-  iam:
-    role:
-      statements:
-        - Effect: Allow
-          Action:
-            - dynamodb:GetItem
-            - dynamodb:PutItem
-            - dynamodb:UpdateItem
-            - dynamodb:DeleteItem
-            - dynamodb:Scan
-            - dynamodb:BatchGetItem
-            - dynamodb:TransactWriteItems
-          Resource:
-            - arn:aws:dynamodb:ap-southeast-2:*:*:table/Ingredients
-            - arn:aws:dynamodb:ap-southeast-2:*:*:table/Recipes
-            - arn:aws:dynamodb:ap-southeast-2:*:*:table/Sales
-        - Effect: Allow
-          Action:
-            - logs:CreateLogGroup
-            - logs:CreateLogStream
-            - logs:PutLogEvents
-          Resource: "*"
-        - Effect: Allow
-          Action:
-            - s3:PutObject
-            - s3:GetObject
-            - s3:DeleteObject
-          Resource: "arn:aws:s3:::food-cost-deployment-bucket-795796019955/*"
+  iamRoleStatements: # <-- USE THIS FORMAT for Serverless Framework v2/v3/v4!
+    - Effect: Allow
+      Action:
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - dynamodb:Scan
+        - dynamodb:BatchGetItem
+        - dynamodb:BatchWriteItem
+        - dynamodb:TransactWriteItems
+      Resource:
+        - arn:aws:dynamodb:ap-southeast-2:*:*:table/Ingredients
+        - arn:aws:dynamodb:ap-southeast-2:*:*:table/Recipes
+        - arn:aws:dynamodb:ap-southeast-2:*:*:table/Sales
+    - Effect: Allow
+      Action:
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+        - s3:GetObject
+        - s3:DeleteObject
+      Resource: "arn:aws:s3:::food-cost-deployment-bucket-795796019955/*"
 
 functions:
   api:
     handler: lambda.handler
     memorySize: 512
     timeout: 29
+    package:
+      individually: true
+      patterns:
+        - lambda.js
+        - "node_modules/**"
     events:
       - http:
           path: ingredients

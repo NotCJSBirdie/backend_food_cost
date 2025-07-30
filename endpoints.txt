@@ -1,0 +1,34 @@
+✔ Installed Serverless Framework v4.17.2
+Deploying "food-cost-api" to stage "dev" (ap-southeast-2)
+✔ Service deployed to stack food-cost-api-dev (106s)
+endpoints:
+  GET - https://ub3fux8b3e.execute-api.ap-southeast-2.amazonaws.com/dev/ingredients
+  POST - https://ub3fux8b3e.execute-api.ap-southeast-2.amazonaws.com/dev/ingredients
+  DELETE - https://ub3fux8b3e.execute-api.ap-southeast-2.amazonaws.com/dev/ingredients/{id}
+  GET - https://ub3fux8b3e.execute-api.ap-southeast-2.amazonaws.com/dev/recipes
+  POST - https://ub3fux8b3e.execute-api.ap-southeast-2.amazonaws.com/dev/recipes
+  DELETE - https://ub3fux8b3e.execute-api.ap-southeast-2.amazonaws.com/dev/recipes/{id}
+  GET - https://ub3fux8b3e.execute-api.ap-southeast-2.amazonaws.com/dev/sales
+  POST - https://ub3fux8b3e.execute-api.ap-southeast-2.amazonaws.com/dev/sales
+  DELETE - https://ub3fux8b3e.execute-api.ap-southeast-2.amazonaws.com/dev/sales/{id}
+  GET - https://ub3fux8b3e.execute-api.ap-southeast-2.amazonaws.com/dev/dashboard
+functions:
+  api: food-cost-api-dev-api (65 MB)
+
+
+
+
+✔ Service deployed to stack food-cost-api-prod (100s)
+endpoints:
+  GET - https://wph61ywnp3.execute-api.ap-southeast-2.amazonaws.com/prod/ingredients
+  POST - https://wph61ywnp3.execute-api.ap-southeast-2.amazonaws.com/prod/ingredients
+  DELETE - https://wph61ywnp3.execute-api.ap-southeast-2.amazonaws.com/prod/ingredients/{id}
+  GET - https://wph61ywnp3.execute-api.ap-southeast-2.amazonaws.com/prod/recipes
+  POST - https://wph61ywnp3.execute-api.ap-southeast-2.amazonaws.com/prod/recipes
+  DELETE - https://wph61ywnp3.execute-api.ap-southeast-2.amazonaws.com/prod/recipes/{id}
+  GET - https://wph61ywnp3.execute-api.ap-southeast-2.amazonaws.com/prod/sales
+  POST - https://wph61ywnp3.execute-api.ap-southeast-2.amazonaws.com/prod/sales
+  DELETE - https://wph61ywnp3.execute-api.ap-southeast-2.amazonaws.com/prod/sales/{id}
+  GET - https://wph61ywnp3.execute-api.ap-southeast-2.amazonaws.com/prod/dashboard
+functions:
+  api: food-cost-api-prod-api (65 MB)
