@@ -29,7 +29,7 @@ provider:
             - dynamodb:Scan
             - dynamodb:BatchGetItem
             - dynamodb:TransactWriteItems
-          Resource: 
+          Resource:
             - arn:aws:dynamodb:ap-southeast-2:*:*:table/Ingredients
             - arn:aws:dynamodb:ap-southeast-2:*:*:table/Recipes
             - arn:aws:dynamodb:ap-southeast-2:*:*:table/Sales
@@ -52,18 +52,36 @@ functions:
     memorySize: 512
     timeout: 29
     events:
-      - http: { path: ingredients, method: get }
-      - http: { path: ingredients, method: post }
-      - http: { path: ingredients/{id}, method: delete }
-      - http: { path: recipes, method: get }
-      - http: { path: recipes, method: post }
-      - http: { path: recipes/{id}, method: delete }
-      - http: { path: sales, method: get }
-      - http: { path: sales, method: post }
-      - http: { path: sales/{id}, method: delete }
-      - http: { path: dashboard, method: get }
-
-plugins: []
+      - http:
+          path: ingredients
+          method: get
+      - http:
+          path: ingredients
+          method: post
+      - http:
+          path: ingredients/{id}
+          method: delete
+      - http:
+          path: recipes
+          method: get
+      - http:
+          path: recipes
+          method: post
+      - http:
+          path: recipes/{id}
+          method: delete
+      - http:
+          path: sales
+          method: get
+      - http:
+          path: sales
+          method: post
+      - http:
+          path: sales/{id}
+          method: delete
+      - http:
+          path: dashboard
+          method: get
 
 package:
   individually: true
