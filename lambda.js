@@ -2,7 +2,12 @@ const AWS = require("aws-sdk");
 const ddb = new AWS.DynamoDB.DocumentClient({ region: "ap-southeast-2" });
 const { v4: uuidv4 } = require("uuid");
 
-// Helper: scan all rows from a table (handles >1MB via pagination)
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+};
+
 const scanAll = async (TableName) => {
   let items = [];
   let params = { TableName };
@@ -28,10 +33,18 @@ const batchGet = async (TableName, ids) => {
 };
 
 const parsePathId = (path, prefix) => {
-  // e.g. /ingredients/123 → returns "123"
   const parts = path.split("/");
   return parts.length === 3 && `/${parts[1]}` === prefix ? parts[2] : null;
 };
+
+// Unified error helper with CORS
+function _err(status, msg) {
+  return {
+    statusCode: status,
+    headers: CORS_HEADERS,
+    body: JSON.stringify({ success: false, error: msg }),
+  };
+}
 
 exports.handler = async (event) => {
   try {
@@ -43,7 +56,11 @@ exports.handler = async (event) => {
     // GET /ingredients
     if (method === "GET" && path === "/ingredients") {
       const items = await scanAll("Ingredients");
-      return { statusCode: 200, body: JSON.stringify(items) };
+      return {
+        statusCode: 200,
+        headers: CORS_HEADERS,
+        body: JSON.stringify(items),
+      };
     }
 
     // POST /ingredients
@@ -75,6 +92,7 @@ exports.handler = async (event) => {
         .promise();
       return {
         statusCode: 201,
+        headers: CORS_HEADERS,
         body: JSON.stringify({ success: true, ingredient }),
       };
     }
@@ -83,7 +101,6 @@ exports.handler = async (event) => {
     if (method === "DELETE" && path.startsWith("/ingredients/")) {
       const id = parsePathId(path, "/ingredients");
       if (!id) return _err(400, "Missing ingredient ID");
-      // Delete ingredient
       const getRes = await ddb
         .get({ TableName: "Ingredients", Key: { id } })
         .promise();
@@ -108,7 +125,11 @@ exports.handler = async (event) => {
             .promise();
         }
       }
-      return { statusCode: 200, body: JSON.stringify({ success: true }) };
+      return {
+        statusCode: 200,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ success: true }),
+      };
     }
 
     // --- RECIPES ---
@@ -142,7 +163,11 @@ exports.handler = async (event) => {
           ingredients: ingrWithInfo,
         };
       });
-      return { statusCode: 200, body: JSON.stringify(result) };
+      return {
+        statusCode: 200,
+        headers: CORS_HEADERS,
+        body: JSON.stringify(result),
+      };
     }
 
     // POST /recipes
@@ -187,6 +212,7 @@ exports.handler = async (event) => {
       await ddb.put({ TableName: "Recipes", Item: recipe }).promise();
       return {
         statusCode: 201,
+        headers: CORS_HEADERS,
         body: JSON.stringify({
           success: true,
           recipe: { ...recipe, ingredients: recipeIngredientsArr },
@@ -206,7 +232,11 @@ exports.handler = async (event) => {
           .promise();
       }
       await ddb.delete({ TableName: "Recipes", Key: { id } }).promise();
-      return { statusCode: 200, body: JSON.stringify({ success: true }) };
+      return {
+        statusCode: 200,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ success: true }),
+      };
     }
 
     // --- SALES ---
@@ -249,8 +279,13 @@ exports.handler = async (event) => {
           recipe: null,
         };
       });
-      return { statusCode: 200, body: JSON.stringify(result) };
+      return {
+        statusCode: 200,
+        headers: CORS_HEADERS,
+        body: JSON.stringify(result),
+      };
     }
+
     // POST /sales
     if (method === "POST" && path === "/sales") {
       const { recipeId, saleAmount, quantitySold } = body;
@@ -306,7 +341,11 @@ exports.handler = async (event) => {
       transactItems.push({ Put: { TableName: "Sales", Item: sale } });
       await ddb.transactWrite({ TransactItems: transactItems }).promise();
 
-      return { statusCode: 201, body: JSON.stringify({ success: true, sale }) };
+      return {
+        statusCode: 201,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ success: true, sale }),
+      };
     }
 
     // DELETE /sales/{id}
@@ -314,13 +353,16 @@ exports.handler = async (event) => {
       const id = parsePathId(path, "/sales");
       if (!id) return _err(400, "Missing sale ID");
       await ddb.delete({ TableName: "Sales", Key: { id } }).promise();
-      return { statusCode: 200, body: JSON.stringify({ success: true }) };
+      return {
+        statusCode: 200,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ success: true }),
+      };
     }
 
     // --- DASHBOARD ---
     // GET /dashboard
     if (method === "GET" && path === "/dashboard") {
-      // (Same as your old dashboardStats, but at `/dashboard`)
       const [sales, recipes, ingredients] = await Promise.all([
         scanAll("Sales"),
         scanAll("Recipes"),
@@ -354,6 +396,7 @@ exports.handler = async (event) => {
       );
       return {
         statusCode: 200,
+        headers: CORS_HEADERS,
         body: JSON.stringify({
           totalSales,
           totalCosts,
@@ -366,21 +409,15 @@ exports.handler = async (event) => {
     // --- Not found
     return {
       statusCode: 404,
+      headers: CORS_HEADERS,
       body: JSON.stringify({ error: "Route not found" }),
     };
   } catch (error) {
     console.error("Lambda error:", error);
     return {
       statusCode: 500,
+      headers: CORS_HEADERS,
       body: JSON.stringify({ error: error.message || "Internal Server Error" }),
     };
   }
 };
-
-// Simple error response helper
-function _err(status, msg) {
-  return {
-    statusCode: status,
-    body: JSON.stringify({ success: false, error: msg }),
-  };
-}
