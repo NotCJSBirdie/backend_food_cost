@@ -286,7 +286,7 @@ exports.handler = async (event) => {
       };
     }
 
-    // POST /sales
+    // BUGFIXED SALES POST!!
     if (method === "POST" && path === "/sales") {
       const { recipeId, saleAmount, quantitySold } = body;
       if (!recipeId || typeof recipeId !== "string")
@@ -311,23 +311,54 @@ exports.handler = async (event) => {
       if (typeof ingrArr === "string") ingrArr = JSON.parse(ingrArr);
       if ((ingrArr || []).length === 0)
         return _err(409, `Recipe ${recipeId} has no ingredients`);
+
       const ingredientIds = ingrArr.map((ri) => ri.ingredientId);
       const stockIngredients = await batchGet("Ingredients", ingredientIds);
-      // Prepare TransactWrite for stock update and sale record (atomic)
-      const transactItems = [];
+
+      // PRECHECK: Make sure all used ingredients have enough stock!
+      const insufficient = [];
       for (const ri of ingrArr) {
         const ing = stockIngredients.find(
           (item) => item.id === ri.ingredientId
         );
         if (!ing) return _err(404, `Ingredient ${ri.ingredientId} not found`);
-        const stockDeduction = Number(ri.quantity) * Number(quantitySold);
+        const stockAvailable = Number(ing.stockQuantity ?? 0);
+        const needed = Number(ri.quantity) * Number(quantitySold);
+        if (stockAvailable < needed) {
+          insufficient.push({
+            id: ing.id,
+            name: ing.name,
+            stock: stockAvailable,
+            needed,
+          });
+        }
+      }
+      if (insufficient.length > 0) {
+        return _err(
+          409,
+          "Insufficient stock for: " +
+            insufficient
+              .map(
+                (i) => `${i.name || i.id} (have ${i.stock}, need ${i.needed})`
+              )
+              .join(", ")
+        );
+      }
+
+      // Prepare TransactWrite for stock update and sale record (atomic), ensuring number usage
+      const transactItems = [];
+      for (const ri of ingrArr) {
+        const ing = stockIngredients.find(
+          (item) => item.id === ri.ingredientId
+        );
+        const deduction = Number(ri.quantity) * Number(quantitySold);
         transactItems.push({
           Update: {
             TableName: "Ingredients",
             Key: { id: ing.id },
             UpdateExpression: "SET stockQuantity = stockQuantity - :deduct",
             ConditionExpression: "stockQuantity >= :deduct",
-            ExpressionAttributeValues: { ":deduct": stockDeduction },
+            ExpressionAttributeValues: { ":deduct": deduction },
           },
         });
       }
