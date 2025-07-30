@@ -4,14 +4,6 @@ service: food-cost-api
 
 frameworkVersion: ^4
 
-params:
-  default:
-    domain: ${sls:stage}.foodcostapi.com
-  prod:
-    domain: foodcostapi.com
-  dev:
-    domain: dev.foodcostapi.com
-
 provider:
   name: aws
   runtime: nodejs22.x
@@ -23,7 +15,6 @@ provider:
     serverSideEncryption: AES256
   environment:
     NODE_ENV: ${opt:stage, 'production'}
-    # Remove DB_HOST, DB_NAME, DB_USER, DB_PASSWORD unless used in logs/etc
   tags:
     environment: ${sls:stage}
   iam:
@@ -60,26 +51,16 @@ functions:
     handler: lambda.handler
     memorySize: 512
     timeout: 29
-    package:
-      individually: true
-      patterns:
-        - lambda.js
-        - "node_modules/**"
-        - "!**"
     events:
-      # Ingredients CRUD
       - http: { path: ingredients, method: get }
       - http: { path: ingredients, method: post }
       - http: { path: ingredients/{id}, method: delete }
-      # Recipes CRUD
       - http: { path: recipes, method: get }
       - http: { path: recipes, method: post }
       - http: { path: recipes/{id}, method: delete }
-      # Sales CRUD
       - http: { path: sales, method: get }
       - http: { path: sales, method: post }
       - http: { path: sales/{id}, method: delete }
-      # Dashboard (custom endpoint)
       - http: { path: dashboard, method: get }
 
 plugins: []
