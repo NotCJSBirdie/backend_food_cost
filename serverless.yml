@@ -17,7 +17,7 @@ provider:
     NODE_ENV: ${opt:stage, 'production'}
   tags:
     environment: ${sls:stage}
-  iamRoleStatements: # <-- USE THIS FORMAT for Serverless Framework v2/v3/v4!
+  iamRoleStatements:
     - Effect: Allow
       Action:
         - dynamodb:GetItem
@@ -56,36 +56,50 @@ functions:
         - lambda.js
         - "node_modules/**"
     events:
+      # All REST endpoints with CORS enabled
       - http:
           path: ingredients
           method: get
+          cors: true
       - http:
           path: ingredients
           method: post
+          cors: true
       - http:
           path: ingredients/{id}
           method: delete
+          cors: true
+
       - http:
           path: recipes
           method: get
+          cors: true
       - http:
           path: recipes
           method: post
+          cors: true
       - http:
           path: recipes/{id}
           method: delete
+          cors: true
+
       - http:
           path: sales
           method: get
+          cors: true
       - http:
           path: sales
           method: post
+          cors: true
       - http:
           path: sales/{id}
           method: delete
+          cors: true
+
       - http:
           path: dashboard
           method: get
+          cors: true
 
 package:
   individually: true
