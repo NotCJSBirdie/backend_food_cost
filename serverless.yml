@@ -22,11 +22,8 @@ provider:
     blockPublicAccess: true
     serverSideEncryption: AES256
   environment:
-    DB_USER: ${env:DB_USER, 'foodcostadmin'}
-    DB_PASSWORD: ${env:DB_PASSWORD}
-    DB_NAME: ${env:DB_NAME, 'foodcost'}
-    DB_HOST: ${env:DB_HOST}
     NODE_ENV: ${opt:stage, 'production'}
+    # Remove DB_HOST, DB_NAME, DB_USER, DB_PASSWORD unless used in logs/etc
   tags:
     environment: ${sls:stage}
   iam:
@@ -34,10 +31,17 @@ provider:
       statements:
         - Effect: Allow
           Action:
-            - s3:PutObject
-            - s3:GetObject
-            - s3:DeleteObject
-          Resource: "arn:aws:s3:::food-cost-deployment-bucket-795796019955/*"
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:Scan
+            - dynamodb:BatchGetItem
+            - dynamodb:TransactWriteItems
+          Resource: 
+            - arn:aws:dynamodb:ap-southeast-2:*:*:table/Ingredients
+            - arn:aws:dynamodb:ap-southeast-2:*:*:table/Recipes
+            - arn:aws:dynamodb:ap-southeast-2:*:*:table/Sales
         - Effect: Allow
           Action:
             - logs:CreateLogGroup
@@ -46,11 +50,13 @@ provider:
           Resource: "*"
         - Effect: Allow
           Action:
-            - rds:*
-          Resource: "*"
+            - s3:PutObject
+            - s3:GetObject
+            - s3:DeleteObject
+          Resource: "arn:aws:s3:::food-cost-deployment-bucket-795796019955/*"
 
 functions:
-  food-cost-api-prod-FoodCostLambda:
+  api:
     handler: lambda.handler
     memorySize: 512
     timeout: 29
@@ -58,80 +64,29 @@ functions:
       individually: true
       patterns:
         - lambda.js
-        - data-source.js
         - "node_modules/**"
-        - src/schema.graphql
-        - vtl/**
         - "!**"
+    events:
+      # Ingredients CRUD
+      - http: { path: ingredients, method: get }
+      - http: { path: ingredients, method: post }
+      - http: { path: ingredients/{id}, method: delete }
+      # Recipes CRUD
+      - http: { path: recipes, method: get }
+      - http: { path: recipes, method: post }
+      - http: { path: recipes/{id}, method: delete }
+      # Sales CRUD
+      - http: { path: sales, method: get }
+      - http: { path: sales, method: post }
+      - http: { path: sales/{id}, method: delete }
+      # Dashboard (custom endpoint)
+      - http: { path: dashboard, method: get }
 
-plugins:
-  - serverless-appsync-plugin
-
-appSync:
-  name: FoodCostApi
-  authentication:
-    type: API_KEY
-  schema: src/schema.graphql
-  dataSources:
-    FoodCostLambdaDataSource:
-      type: AWS_LAMBDA
-      config:
-        functionName: food-cost-api-prod-FoodCostLambda
-  resolvers:
-    Query.dashboardStats:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-      request: vtl/dashboardStats/request.vtl
-      response: vtl/dashboardStats/response.vtl
-    Query.ingredients:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-      request: vtl/ingredients/request.vtl
-      response: vtl/ingredients/response.vtl
-    Query.recipes:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-      request: vtl/recipes/request.vtl
-      response: vtl/recipes/response.vtl
-    Query.sales:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-      request: vtl/sales/request.vtl
-      response: vtl/sales/response.vtl
-    Mutation.addIngredient:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-      request: vtl/addIngredient/request.vtl
-      response: vtl/addIngredient/response.vtl
-    Mutation.createRecipe:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-      request: vtl/createRecipe/request.vtl
-      response: vtl/createRecipe/response.vtl
-    Mutation.recordSale:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-      request: vtl/recordSale/request.vtl
-      response: vtl/recordSale/response.vtl
-    Mutation.deleteIngredient:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-      request: vtl/deleteIngredient/request.vtl
-      response: vtl/deleteIngredient/response.vtl
-    Mutation.deleteRecipe:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-      request: vtl/deleteRecipe/request.vtl
-      response: vtl/deleteRecipe/response.vtl
-    Mutation.deleteSale:
-      kind: UNIT
-      dataSource: FoodCostLambdaDataSource
-      request: vtl/deleteSale/request.vtl
-      response: vtl/deleteSale/response.vtl
+plugins: []
 
 package:
   individually: true
   patterns:
-    - src/schema.graphql
-    - vtl/**
+    - lambda.js
+    - "node_modules/**"
     - "!**"
